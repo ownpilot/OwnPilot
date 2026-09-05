@@ -12,10 +12,10 @@
   },
   "models": [
     {
-      "id": "sarvam-30b",
-      "name": "Sarvam-30B",
-      "contextWindow": 65536,
-      "maxOutput": 65536,
+      "id": "sarvam-105b",
+      "name": "Sarvam-105B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -28,10 +28,10 @@
       "releaseDate": "2026-02-18"
     },
     {
-      "id": "sarvam-105b",
-      "name": "Sarvam-105B",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
+      "id": "sarvam-30b",
+      "name": "Sarvam-30B",
+      "contextWindow": 65536,
+      "maxOutput": 65536,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

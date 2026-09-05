@@ -79,12 +79,12 @@
       "releaseDate": "2026-06-01"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V4-Flash",
-      "name": "DeepSeek V4 Flash",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
+      "id": "deepseek-ai/DeepSeek-V4-Pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 1.75,
+      "outputPrice": 3.5,
       "capabilities": [
         "chat",
         "function_calling",
@@ -96,12 +96,12 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V4-Pro",
-      "name": "DeepSeek V4 Pro",
-      "contextWindow": 1000000,
-      "maxOutput": 384000,
-      "inputPrice": 1.75,
-      "outputPrice": 3.5,
+      "id": "deepseek-ai/DeepSeek-V4-Flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "function_calling",
@@ -147,6 +147,23 @@
       "releaseDate": "2026-03-01"
     },
     {
+      "id": "NousResearch/Hermes-4-405B",
+      "name": "Hermes-4-405B",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-30"
+    },
+    {
       "id": "NousResearch/Hermes-4-70B",
       "name": "Hermes-4-70B",
       "contextWindow": 128000,
@@ -164,21 +181,20 @@
       "releaseDate": "2026-01-30"
     },
     {
-      "id": "NousResearch/Hermes-4-405B",
-      "name": "Hermes-4-405B",
+      "id": "Qwen/Qwen3-32B",
+      "name": "Qwen3-32B",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 1,
-      "outputPrice": 3,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-01-30"
+      "releaseDate": "2026-01-28"
     },
     {
       "id": "Qwen/Qwen3-Next-80B-A3B-Thinking",
@@ -200,22 +216,6 @@
     {
       "id": "Qwen/Qwen3-30B-A3B-Instruct-2507",
       "name": "Qwen3-30B-A3B-Instruct-2507",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.1,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-28"
-    },
-    {
-      "id": "Qwen/Qwen3-32B",
-      "name": "Qwen3-32B",
       "contextWindow": 128000,
       "maxOutput": 8192,
       "inputPrice": 0.1,
@@ -280,20 +280,6 @@
       "releaseDate": "2026-01-20"
     },
     {
-      "id": "Qwen/Qwen3-Embedding-8B",
-      "name": "Qwen3-Embedding-8B",
-      "contextWindow": 32768,
-      "maxOutput": 0,
-      "inputPrice": 0.01,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-10"
-    },
-    {
       "id": "openai/gpt-oss-120b",
       "name": "gpt-oss-120b",
       "contextWindow": 128000,
@@ -311,8 +297,22 @@
       "releaseDate": "2026-01-10"
     },
     {
-      "id": "moonshotai/Kimi-K2.5-fast",
-      "name": "Kimi-K2.5-fast",
+      "id": "Qwen/Qwen3-Embedding-8B",
+      "name": "Qwen3-Embedding-8B",
+      "contextWindow": 32768,
+      "maxOutput": 0,
+      "inputPrice": 0.01,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-10"
+    },
+    {
+      "id": "moonshotai/Kimi-K2.5",
+      "name": "Kimi-K2.5",
       "contextWindow": 256000,
       "maxOutput": 8192,
       "inputPrice": 0.5,
@@ -329,8 +329,8 @@
       "releaseDate": "2025-12-15"
     },
     {
-      "id": "moonshotai/Kimi-K2.5",
-      "name": "Kimi-K2.5",
+      "id": "moonshotai/Kimi-K2.5-fast",
+      "name": "Kimi-K2.5-fast",
       "contextWindow": 256000,
       "maxOutput": 8192,
       "inputPrice": 0.5,
@@ -428,9 +428,9 @@
       "releaseDate": "2025-07-25"
     },
     {
-      "id": "Qwen/Qwen3.5-397B-A17B",
-      "name": "Qwen3.5-397B-A17B",
-      "contextWindow": 262144,
+      "id": "Qwen/Qwen3.5-397B-A17B-fast",
+      "name": "Qwen3.5-397B-A17B-fast",
+      "contextWindow": 8000,
       "maxOutput": 8192,
       "inputPrice": 0.6,
       "outputPrice": 3.6,
@@ -445,9 +445,9 @@
       "releaseDate": "2025-07-15"
     },
     {
-      "id": "Qwen/Qwen3.5-397B-A17B-fast",
-      "name": "Qwen3.5-397B-A17B-fast",
-      "contextWindow": 8000,
+      "id": "Qwen/Qwen3.5-397B-A17B",
+      "name": "Qwen3.5-397B-A17B",
+      "contextWindow": 262144,
       "maxOutput": 8192,
       "inputPrice": 0.6,
       "outputPrice": 3.6,
@@ -496,40 +496,6 @@
       "releaseDate": "2025-01-27"
     },
     {
-      "id": "nvidia/Nemotron-3-Nano-Omni",
-      "name": "Nemotron-3-Nano-Omni",
-      "contextWindow": 65536,
-      "maxOutput": 8192,
-      "inputPrice": 0.06,
-      "outputPrice": 0.24,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-20"
-    },
-    {
-      "id": "Qwen/Qwen2.5-VL-72B-Instruct",
-      "name": "Qwen2.5-VL-72B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.25,
-      "outputPrice": 0.75,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-20"
-    },
-    {
       "id": "MiniMaxAI/MiniMax-M2.5-fast",
       "name": "MiniMax-M2.5-fast",
       "contextWindow": 8000,
@@ -558,6 +524,40 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "nvidia/Nemotron-3-Nano-Omni",
+      "name": "Nemotron-3-Nano-Omni",
+      "contextWindow": 65536,
+      "maxOutput": 8192,
+      "inputPrice": 0.06,
+      "outputPrice": 0.24,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "Qwen/Qwen2.5-VL-72B-Instruct",
+      "name": "Qwen2.5-VL-72B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.25,
+      "outputPrice": 0.75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
         "streaming"
       ],
       "default": false,

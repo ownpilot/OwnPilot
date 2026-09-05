@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "claudinio",
-      "name": "Claudinio",
+      "id": "claudius",
+      "name": "Claudius",
       "contextWindow": 256000,
       "maxOutput": 64000,
-      "inputPrice": 0.5,
-      "outputPrice": 2,
+      "inputPrice": 3,
+      "outputPrice": 8,
       "capabilities": [
         "chat",
         "vision",
@@ -30,12 +30,12 @@
       "releaseDate": "2026-05-12"
     },
     {
-      "id": "claudius",
-      "name": "Claudius",
+      "id": "claudinio",
+      "name": "Claudinio",
       "contextWindow": 256000,
       "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 8,
+      "inputPrice": 0.5,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "vision",

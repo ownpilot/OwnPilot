@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "kimi-k2.6",
-      "name": "Kimi K2.6",
+      "id": "kimi-latest",
+      "name": "Kimi (latest)",
       "contextWindow": 256000,
       "maxOutput": 262144,
       "inputPrice": 1.791,
@@ -30,8 +30,8 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "kimi-latest",
-      "name": "Kimi (latest)",
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
       "contextWindow": 256000,
       "maxOutput": 262144,
       "inputPrice": 1.791,

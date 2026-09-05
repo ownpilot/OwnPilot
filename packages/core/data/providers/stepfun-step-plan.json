@@ -12,6 +12,21 @@
   },
   "models": [
     {
+      "id": "step-router-v1",
+      "name": "Step Router v1",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-29"
+    },
+    {
       "id": "step-3.7-flash",
       "name": "Step 3.7 Flash",
       "contextWindow": 256000,
@@ -23,21 +38,6 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2026-05-29"
-    },
-    {
-      "id": "step-router-v1",
-      "name": "Step Router v1",
-      "contextWindow": 256000,
-      "maxOutput": 256000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,

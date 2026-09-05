@@ -42,12 +42,12 @@
       "releaseDate": "2026-02-05"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
-      "contextWindow": 131072,
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131000,
       "maxOutput": 8192,
-      "inputPrice": 0.18,
-      "outputPrice": 0.29,
+      "inputPrice": 0.53,
+      "outputPrice": 0.76,
       "capabilities": [
         "chat",
         "function_calling",
@@ -58,12 +58,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "contextWindow": 131000,
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
       "maxOutput": 8192,
-      "inputPrice": 0.53,
-      "outputPrice": 0.76,
+      "inputPrice": 0.18,
+      "outputPrice": 0.29,
       "capabilities": [
         "chat",
         "function_calling",

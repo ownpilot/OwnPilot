@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "deepseek-v4-flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
+      "id": "deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro 0813",
       "contextWindow": 1048576,
-      "maxOutput": 384000,
-      "inputPrice": 0.152432,
-      "outputPrice": 0.304864,
+      "maxOutput": 262144,
+      "inputPrice": 1.437216,
+      "outputPrice": 4.311648,
       "capabilities": [
         "chat",
         "function_calling",
@@ -26,6 +26,23 @@
         "streaming"
       ],
       "default": true,
+      "releaseDate": "2026-08-14"
+    },
+    {
+      "id": "deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1048576,
+      "maxOutput": 384000,
+      "inputPrice": 0.13,
+      "outputPrice": 0.26,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-08-02"
     },
     {
@@ -46,12 +63,12 @@
       "releaseDate": "2026-07-30"
     },
     {
-      "id": "qwen3.7-flash",
-      "name": "Qwen3.7 Flash",
-      "contextWindow": 1000000,
-      "maxOutput": 64000,
-      "inputPrice": 0.2,
-      "outputPrice": 0.8,
+      "id": "kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -64,12 +81,12 @@
       "releaseDate": "2026-07-27"
     },
     {
-      "id": "kimi-k3",
-      "name": "Kimi K3",
-      "contextWindow": 1048576,
-      "maxOutput": 131072,
-      "inputPrice": 3.2664,
-      "outputPrice": 16.332,
+      "id": "qwen3.7-flash",
+      "name": "Qwen3.7 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.8,
       "capabilities": [
         "chat",
         "vision",
@@ -133,24 +150,6 @@
       "releaseDate": "2026-07-06"
     },
     {
-      "id": "kimi-k2.6",
-      "name": "Kimi K2.6",
-      "contextWindow": 262000,
-      "maxOutput": 26214,
-      "inputPrice": 0.95,
-      "outputPrice": 4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-07-03"
-    },
-    {
       "id": "kimi-k2.7-code",
       "name": "Kimi K2.7 Code",
       "contextWindow": 256000,
@@ -169,12 +168,30 @@
       "releaseDate": "2026-07-03"
     },
     {
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262000,
+      "maxOutput": 26214,
+      "inputPrice": 0.95,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-03"
+    },
+    {
       "id": "glm-5.2",
       "name": "GLM-5.2",
       "contextWindow": 1000000,
       "maxOutput": 32768,
-      "inputPrice": 1.4,
-      "outputPrice": 4.4,
+      "inputPrice": 1.1,
+      "outputPrice": 3.851,
       "capabilities": [
         "chat",
         "function_calling",
@@ -207,8 +224,8 @@
       "name": "MiniMax-M2.7",
       "contextWindow": 262100,
       "maxOutput": 6553,
-      "inputPrice": 0.436,
-      "outputPrice": 1.66,
+      "inputPrice": 0.47,
+      "outputPrice": 1.76,
       "capabilities": [
         "chat",
         "function_calling",
@@ -221,10 +238,10 @@
     {
       "id": "glm-5.1",
       "name": "GLM-5.1",
-      "contextWindow": 202800,
+      "contextWindow": 202750,
       "maxOutput": 3276,
-      "inputPrice": 1.52432,
-      "outputPrice": 4.79072,
+      "inputPrice": 1.36,
+      "outputPrice": 4.4,
       "capabilities": [
         "chat",
         "function_calling",
@@ -268,6 +285,23 @@
       "releaseDate": "2026-05-20"
     },
     {
+      "id": "qwen3.6-plus",
+      "name": "Qwen3.6 Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-20"
+    },
+    {
       "id": "qwen3.6-flash",
       "name": "Qwen3.6 Flash",
       "contextWindow": 1000000,
@@ -286,44 +320,12 @@
       "releaseDate": "2026-05-20"
     },
     {
-      "id": "qwen3.6-plus",
-      "name": "Qwen3.6 Plus",
-      "contextWindow": 1000000,
-      "maxOutput": 64000,
-      "inputPrice": 2,
-      "outputPrice": 6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-05-20"
-    },
-    {
-      "id": "llama-4-maverick-17b-128e-instruct-fp8",
-      "name": "Llama 4 Maverick 17B Instruct",
-      "contextWindow": 430000,
-      "maxOutput": 43000,
-      "inputPrice": 0.274,
-      "outputPrice": 0.8992,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-30"
-    },
-    {
       "id": "gemma-4-26b-a4b-it",
       "name": "Gemma 4 26B A4B IT",
       "contextWindow": 256000,
       "maxOutput": 25600,
-      "inputPrice": 0.116,
-      "outputPrice": 0.408,
+      "inputPrice": 0.122,
+      "outputPrice": 0.42,
       "capabilities": [
         "chat",
         "function_calling",
@@ -339,8 +341,8 @@
       "name": "Llama-3.3-70B-Instruct",
       "contextWindow": 128000,
       "maxOutput": 12800,
-      "inputPrice": 0.598,
-      "outputPrice": 0.738,
+      "inputPrice": 0.638,
+      "outputPrice": 0.768,
       "capabilities": [
         "chat",
         "function_calling",
@@ -350,12 +352,12 @@
       "releaseDate": "2026-04-30"
     },
     {
-      "id": "qwen3-coder-480b-a35b-instruct-int4-mixed-ar",
-      "name": "Qwen3-Coder 480B-A35B Instruct",
-      "contextWindow": 106000,
-      "maxOutput": 10600,
-      "inputPrice": 0.445,
-      "outputPrice": 2.145,
+      "id": "llama-4-maverick-17b-128e-instruct-fp8",
+      "name": "Llama 4 Maverick 17B Instruct",
+      "contextWindow": 430000,
+      "maxOutput": 43000,
+      "inputPrice": 0.274,
+      "outputPrice": 0.8992,
       "capabilities": [
         "chat",
         "function_calling",
@@ -380,16 +382,30 @@
       "releaseDate": "2026-04-30"
     },
     {
-      "id": "kimi-k2.5",
-      "name": "Kimi K2.5",
-      "contextWindow": 262144,
-      "maxOutput": 26214,
-      "inputPrice": 0.558,
-      "outputPrice": 2.94,
+      "id": "qwen3-coder-480b-a35b-instruct-int4-mixed-ar",
+      "name": "Qwen3-Coder 480B-A35B Instruct",
+      "contextWindow": 106000,
+      "maxOutput": 10600,
+      "inputPrice": 0.445,
+      "outputPrice": 2.145,
       "capabilities": [
         "chat",
         "function_calling",
-        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-30"
+    },
+    {
+      "id": "glm-5",
+      "name": "GLM-5",
+      "contextWindow": 202752,
+      "maxOutput": 20275,
+      "inputPrice": 0.84,
+      "outputPrice": 2.612,
+      "capabilities": [
+        "chat",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -401,8 +417,25 @@
       "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 13107,
-      "inputPrice": 0.188,
-      "outputPrice": 0.73,
+      "inputPrice": 0.16332,
+      "outputPrice": 0.65328,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-13"
+    },
+    {
+      "id": "kimi-k2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 26214,
+      "inputPrice": 0.5744,
+      "outputPrice": 3.005,
       "capabilities": [
         "chat",
         "function_calling",

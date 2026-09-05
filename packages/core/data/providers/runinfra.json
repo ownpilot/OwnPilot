@@ -1,0 +1,85 @@
+{
+  "id": "runinfra",
+  "name": "RunInfra",
+  "type": "openai-compatible",
+  "apiKeyEnv": "RUNINFRA_GATEWAY_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "Qwen/Qwen3.8-27B",
+      "name": "Qwen3.8 27B",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-14"
+    },
+    {
+      "id": "Inferact/Qwen3.8-2.4T-A95B-NVFP4",
+      "name": "Qwen3.8 2.4T A95B (NVFP4)",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-08-12"
+    },
+    {
+      "id": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+      "name": "Nemotron 3.5 Lightning 30B A3B",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.05,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-08-11"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1048576,
+      "maxOutput": 32768,
+      "inputPrice": 0.13,
+      "outputPrice": 0.27,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-31"
+    }
+  ],
+  "baseUrl": "https://api.runinfra.ai/v1",
+  "docsUrl": "https://runinfra.ai/docs"
+}

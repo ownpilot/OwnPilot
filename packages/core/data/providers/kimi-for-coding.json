@@ -12,9 +12,9 @@
   },
   "models": [
     {
-      "id": "k3",
-      "name": "Kimi K3",
-      "contextWindow": 1048576,
+      "id": "k3-256k",
+      "name": "Kimi K3-256K",
+      "contextWindow": 262144,
       "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -30,9 +30,9 @@
       "releaseDate": "2026-07-16"
     },
     {
-      "id": "k3-256k",
-      "name": "Kimi K3-256K",
-      "contextWindow": 262144,
+      "id": "k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
       "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -48,8 +48,8 @@
       "releaseDate": "2026-07-16"
     },
     {
-      "id": "kimi-for-coding",
-      "name": "Kimi K2.7 Code",
+      "id": "kimi-for-coding-highspeed",
+      "name": "Kimi For Coding HighSpeed",
       "contextWindow": 262144,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -66,8 +66,8 @@
       "releaseDate": "2026-06-12"
     },
     {
-      "id": "kimi-for-coding-highspeed",
-      "name": "Kimi For Coding HighSpeed",
+      "id": "kimi-for-coding",
+      "name": "Kimi K2.7 Code",
       "contextWindow": 262144,
       "maxOutput": 32768,
       "inputPrice": 0,

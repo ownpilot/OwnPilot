@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "thinkingmachines/Inkling:peft:262144",
-      "name": "Inkling (256K)",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 3.74,
-      "outputPrice": 9.36,
+      "id": "thinkingmachines/Inkling",
+      "name": "Inkling",
+      "contextWindow": 65536,
+      "maxOutput": 65536,
+      "inputPrice": 1.87,
+      "outputPrice": 4.68,
       "capabilities": [
         "chat",
         "vision",
@@ -29,12 +29,12 @@
       "releaseDate": "2026-07-15"
     },
     {
-      "id": "thinkingmachines/Inkling",
-      "name": "Inkling",
-      "contextWindow": 65536,
-      "maxOutput": 65536,
-      "inputPrice": 1.87,
-      "outputPrice": 4.68,
+      "id": "thinkingmachines/Inkling:peft:262144",
+      "name": "Inkling (256K)",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 3.74,
+      "outputPrice": 9.36,
       "capabilities": [
         "chat",
         "vision",

@@ -12,23 +12,6 @@
   },
   "models": [
     {
-      "id": "deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
-      "contextWindow": 1000000,
-      "maxOutput": 384000,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2026-07-31"
-    },
-    {
       "id": "deepseek-v4-pro",
       "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
@@ -42,8 +25,25 @@
         "reasoning",
         "streaming"
       ],
+      "default": true,
+      "releaseDate": "2026-08-12"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
       "default": false,
-      "releaseDate": "2026-04-24"
+      "releaseDate": "2026-07-31"
     },
     {
       "id": "deepseek-chat",

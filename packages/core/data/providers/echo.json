@@ -1,0 +1,33 @@
+{
+  "id": "echo",
+  "name": "Echo",
+  "type": "openai-compatible",
+  "apiKeyEnv": "ECHO_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "echo",
+      "name": "Echo",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 10,
+      "outputPrice": 50,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-19"
+    }
+  ],
+  "baseUrl": "https://echo.tracerml.ai/v1",
+  "docsUrl": "https://echo.tracerml.ai/docs/api"
+}

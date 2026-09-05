@@ -1,0 +1,34 @@
+{
+  "id": "amd",
+  "name": "AMD",
+  "type": "openai-compatible",
+  "apiKeyEnv": "AMD_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "DeepSeek-V4-Flash",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-31"
+    }
+  ],
+  "baseUrl": "https://developer.amd.com.cn/radeon/api/v1",
+  "docsUrl": "https://developer.amd.com.cn/radeon/tokenfactory"
+}

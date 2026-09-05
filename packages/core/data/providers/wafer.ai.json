@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "GLM-5.2",
-      "name": "GLM-5.2",
+      "id": "glm5.2-fast",
+      "name": "GLM5.2-Fast",
       "contextWindow": 1048576,
       "maxOutput": 131072,
-      "inputPrice": 1.2,
-      "outputPrice": 4.1,
+      "inputPrice": 3,
+      "outputPrice": 10.25,
       "capabilities": [
         "chat",
         "function_calling",
@@ -29,12 +29,12 @@
       "releaseDate": "2026-06-13"
     },
     {
-      "id": "glm5.2-fast",
-      "name": "GLM5.2-Fast",
+      "id": "GLM-5.2",
+      "name": "GLM-5.2",
       "contextWindow": 1048576,
       "maxOutput": 131072,
-      "inputPrice": 3,
-      "outputPrice": 10.25,
+      "inputPrice": 1.2,
+      "outputPrice": 4.1,
       "capabilities": [
         "chat",
         "function_calling",

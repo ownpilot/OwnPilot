@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "muse-spark-1.2-contributor",
-      "name": "Muse Spark 1.2 Contributor",
+      "id": "muse-spark-1.2",
+      "name": "Muse Spark 1.2",
       "contextWindow": 1048576,
       "maxOutput": 131072,
-      "inputPrice": 0.1,
-      "outputPrice": 0.2,
+      "inputPrice": 1.25,
+      "outputPrice": 4.25,
       "capabilities": [
         "chat",
         "vision",
@@ -31,12 +31,12 @@
       "releaseDate": "2026-08-05"
     },
     {
-      "id": "muse-spark-1.2",
-      "name": "Muse Spark 1.2",
+      "id": "muse-spark-1.2-contributor",
+      "name": "Muse Spark 1.2 Contributor",
       "contextWindow": 1048576,
       "maxOutput": 131072,
-      "inputPrice": 1.25,
-      "outputPrice": 4.25,
+      "inputPrice": 0.1,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "vision",

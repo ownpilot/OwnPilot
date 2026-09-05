@@ -12,26 +12,136 @@
   },
   "models": [
     {
-      "id": "trendyol-7b",
-      "name": "Trendyol 7B",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
+      "id": "muse-glimmer-30b-tr",
+      "name": "Muse Glimmer 30B (TR)",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 2,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-10"
+    },
+    {
+      "id": "upstage/solar-pro4",
+      "name": "Solar Pro 4",
+      "contextWindow": 524288,
+      "maxOutput": 131072,
+      "inputPrice": 0.03,
+      "outputPrice": 0.12,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-08-06"
+    },
+    {
+      "id": "meta/muse-spark-1.2-contributor",
+      "name": "Muse Spark 1.2 Contributor",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0.1,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-08-05"
+    },
+    {
+      "id": "thinkingmachines/inkling-small",
+      "name": "Inkling Small",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.58,
+      "outputPrice": 1.44,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-30"
+    },
+    {
+      "id": "thinkingmachines/inkling",
+      "name": "Inkling",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.87,
+      "outputPrice": 4.68,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-15"
+    },
+    {
+      "id": "poolside/laguna-xs-2.1",
+      "name": "Laguna XS 2.1",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
-      "default": true,
-      "releaseDate": "2026-06-06"
+      "default": false,
+      "releaseDate": "2026-07-02"
+    },
+    {
+      "id": "sakana/fugu-ultra",
+      "name": "Fugu Ultra",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 5,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-15"
     },
     {
       "id": "magibu-11b-v8",
       "name": "Magibu 11B v8",
       "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.5,
       "capabilities": [
         "chat",
         "streaming"
@@ -40,24 +150,45 @@
       "releaseDate": "2026-06-05"
     },
     {
-      "id": "sincap",
-      "name": "Sincap",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "id": "qwen/qwen3.7-plus",
+      "name": "Qwen3.7 Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-05-05"
+      "releaseDate": "2026-06-02"
+    },
+    {
+      "id": "qwen/qwen3.6-flash",
+      "name": "Qwen3.6 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 0.25,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-27"
     },
     {
       "id": "medgemma-4b",
       "name": "MedGemma 4B",
       "contextWindow": 8192,
-      "maxOutput": 4096,
+      "maxOutput": 8192,
       "inputPrice": 3,
       "outputPrice": 5,
       "capabilities": [
@@ -69,14 +200,34 @@
       "releaseDate": "2026-04-26"
     },
     {
-      "id": "gemma-4",
-      "name": "Gemma 4",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
-      "inputPrice": 5,
-      "outputPrice": 10,
+      "id": "mimo/mimo-v2.5",
+      "name": "MiMo-V2.5",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "mimo/mimo-v2.5-pro",
+      "name": "MiMo-V2.5-Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.435,
+      "outputPrice": 0.87,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -86,9 +237,94 @@
       "id": "qwen3-6-35b",
       "name": "Qwen3.6 35B-A3B",
       "contextWindow": 16384,
-      "maxOutput": 65536,
+      "maxOutput": 16384,
       "inputPrice": 5,
       "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "gemma-4",
+      "name": "Gemma 4",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 2,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "qwen/qwen3.6-plus",
+      "name": "Qwen3.6 Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 0.5,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "trendyol-asure-12b",
+      "name": "Trendyol Asure 12B",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
+      "inputPrice": 0.1,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-19"
+    },
+    {
+      "id": "qwen/qwen3.5-plus",
+      "name": "Qwen3.5 Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 0.4,
+      "outputPrice": 2.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-16"
+    },
+    {
+      "id": "qwen/qwen3.5-397b-a17b",
+      "name": "Qwen3.5 397B-A17B",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 0.6,
+      "outputPrice": 3.6,
       "capabilities": [
         "chat",
         "vision",
@@ -99,7 +335,214 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-17"
+      "releaseDate": "2026-02-15"
+    },
+    {
+      "id": "upstage/solar-pro3",
+      "name": "Solar Pro 3",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01"
+    },
+    {
+      "id": "qwen/qwen3-vl-plus",
+      "name": "Qwen3-VL Plus",
+      "contextWindow": 256000,
+      "maxOutput": 32768,
+      "inputPrice": 0.2,
+      "outputPrice": 1.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-23"
+    },
+    {
+      "id": "qwen/qwen3-max",
+      "name": "Qwen3 Max",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 1.2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-23"
+    },
+    {
+      "id": "publicai/apertus-8b-instruct",
+      "name": "Apertus 8B Instruct",
+      "contextWindow": 65536,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-02"
+    },
+    {
+      "id": "publicai/apertus-70b-instruct",
+      "name": "Apertus 70B Instruct",
+      "contextWindow": 65536,
+      "maxOutput": 8192,
+      "inputPrice": 0.82,
+      "outputPrice": 2.92,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-02"
+    },
+    {
+      "id": "qwen/qwen3-coder-flash",
+      "name": "Qwen3 Coder Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 0.3,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "qwen/qwen-flash",
+      "name": "Qwen Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 32768,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "qwen/qwen3-coder-plus",
+      "name": "Qwen3 Coder Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-23"
+    },
+    {
+      "id": "mistral/voxtral-small-latest",
+      "name": "Voxtral Small (latest)",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-15"
+    },
+    {
+      "id": "google/gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash-Lite",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-17"
+    },
+    {
+      "id": "upstage/solar-pro2",
+      "name": "Solar Pro 2",
+      "contextWindow": 65536,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-20"
+    },
+    {
+      "id": "perplexity/sonar-deep-research",
+      "name": "Sonar Deep Research",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02-01"
+    },
+    {
+      "id": "qwen/qwen-plus",
+      "name": "Qwen Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 32768,
+      "inputPrice": 0.4,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-25"
     }
   ],
   "baseUrl": "https://llmtr.com/v1",

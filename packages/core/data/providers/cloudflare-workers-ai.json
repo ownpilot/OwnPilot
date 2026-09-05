@@ -12,6 +12,58 @@
   },
   "models": [
     {
+      "id": "@cf/qwen/qwen3.8-27b",
+      "name": "Qwen3.8 27B",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.45,
+      "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-14"
+    },
+    {
+      "id": "@cf/deepseek-ai/deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro 0813",
+      "contextWindow": 1048576,
+      "maxOutput": 1048576,
+      "inputPrice": 1.32,
+      "outputPrice": 3.96,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-08-12"
+    },
+    {
+      "id": "@cf/deepseek-ai/deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1310720,
+      "maxOutput": 1048576,
+      "inputPrice": 0.44,
+      "outputPrice": 1.32,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-31"
+    },
+    {
       "id": "@cf/zai-org/glm-5.2",
       "name": "Glm 5.2",
       "contextWindow": 262144,
@@ -25,7 +77,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-13"
     },
     {
@@ -146,12 +198,12 @@
       "releaseDate": "2025-09-23"
     },
     {
-      "id": "@cf/openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "@cf/openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.2,
-      "outputPrice": 0.3,
+      "inputPrice": 0.35,
+      "outputPrice": 0.75,
       "capabilities": [
         "chat",
         "function_calling",
@@ -163,12 +215,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "@cf/openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "@cf/openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.35,
-      "outputPrice": 0.75,
+      "inputPrice": 0.2,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -193,7 +245,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-04-30"
+      "releaseDate": "2025-04-28"
     },
     {
       "id": "@cf/meta/llama-4-scout-17b-16e-instruct",
@@ -242,34 +294,6 @@
       "releaseDate": "2025-03-05"
     },
     {
-      "id": "@cf/qwen/qwen2.5-coder-32b-instruct",
-      "name": "Qwen2.5 Coder 32B Instruct",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.66,
-      "outputPrice": 1,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-27"
-    },
-    {
-      "id": "@cf/meta/llama-guard-3-8b",
-      "name": "Llama Guard 3 8B",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.484,
-      "outputPrice": 0.03,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-22"
-    },
-    {
       "id": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
       "name": "Deepseek R1 Distill Qwen 32B",
       "contextWindow": 80000,
@@ -300,18 +324,18 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "@cf/meta/llama-3.2-1b-instruct",
-      "name": "Llama 3.2 1B Instruct",
-      "contextWindow": 60000,
-      "maxOutput": 60000,
-      "inputPrice": 0.027,
-      "outputPrice": 0.201,
+      "id": "@cf/qwen/qwen2.5-coder-32b-instruct",
+      "name": "Qwen2.5 Coder 32B Instruct",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.66,
+      "outputPrice": 1,
       "capabilities": [
         "chat",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-09-25"
+      "releaseDate": "2024-11-12"
     },
     {
       "id": "@cf/meta/llama-3.2-3b-instruct",
@@ -320,6 +344,20 @@
       "maxOutput": 80000,
       "inputPrice": 0.0509,
       "outputPrice": 0.335,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "@cf/meta/llama-3.2-1b-instruct",
+      "name": "Llama 3.2 1B Instruct",
+      "contextWindow": 60000,
+      "maxOutput": 60000,
+      "inputPrice": 0.027,
+      "outputPrice": 0.201,
       "capabilities": [
         "chat",
         "streaming"
@@ -354,7 +392,21 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-07-25"
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "@cf/meta/llama-guard-3-8b",
+      "name": "Llama Guard 3 8B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.484,
+      "outputPrice": 0.03,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
     }
   ],
   "baseUrl": "https://api.cloudflareworkersai.com/v1",

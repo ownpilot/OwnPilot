@@ -12,6 +12,25 @@
   },
   "models": [
     {
+      "id": "gemini-3.7-flash",
+      "name": "Gemini 3.7 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.75,
+      "outputPrice": 3.75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-13"
+    },
+    {
       "id": "gemini-3.5-flash-lite",
       "name": "Gemini 3.5 Flash Lite",
       "contextWindow": 1048576,
@@ -27,7 +46,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-07-21"
     },
     {
@@ -50,22 +69,6 @@
       "releaseDate": "2026-07-21"
     },
     {
-      "id": "gemini-omni-flash-preview",
-      "name": "Gemini Omni Flash Preview",
-      "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 1.5,
-      "outputPrice": 17.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-30"
-    },
-    {
       "id": "gemini-3.1-flash-lite-image",
       "name": "Nano Banana 2 Lite",
       "contextWindow": 65536,
@@ -76,6 +79,22 @@
         "chat",
         "vision",
         "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "gemini-omni-flash-preview",
+      "name": "Gemini Omni Flash Preview",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 17.5,
+      "capabilities": [
+        "chat",
+        "vision",
         "reasoning",
         "streaming"
       ],
@@ -98,12 +117,12 @@
       "releaseDate": "2026-06-09"
     },
     {
-      "id": "gemini-3.1-flash-image",
-      "name": "Nano Banana 2",
-      "contextWindow": 65536,
-      "maxOutput": 65536,
-      "inputPrice": 0.5,
-      "outputPrice": 60,
+      "id": "gemini-3-pro-image",
+      "name": "Nano Banana Pro",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 120,
       "capabilities": [
         "chat",
         "vision",
@@ -114,12 +133,12 @@
       "releaseDate": "2026-05-28"
     },
     {
-      "id": "gemini-3-pro-image",
-      "name": "Nano Banana Pro",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
-      "inputPrice": 2,
-      "outputPrice": 120,
+      "id": "gemini-3.1-flash-image",
+      "name": "Nano Banana 2",
+      "contextWindow": 65536,
+      "maxOutput": 65536,
+      "inputPrice": 0.5,
+      "outputPrice": 60,
       "capabilities": [
         "chat",
         "vision",
@@ -168,8 +187,8 @@
       "releaseDate": "2026-05-19"
     },
     {
-      "id": "gemini-3.1-flash-lite",
-      "name": "Gemini 3.1 Flash Lite",
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash-Lite Latest",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.25,
@@ -187,8 +206,8 @@
       "releaseDate": "2026-05-07"
     },
     {
-      "id": "gemini-flash-lite-latest",
-      "name": "Gemini Flash-Lite Latest",
+      "id": "gemini-3.1-flash-lite",
+      "name": "Gemini 3.1 Flash Lite",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.25,
@@ -361,8 +380,8 @@
       "releaseDate": "2026-03-26"
     },
     {
-      "id": "lyria-3-pro-preview",
-      "name": "Lyria 3 Pro Preview",
+      "id": "lyria-3-clip-preview",
+      "name": "Lyria 3 Clip Preview",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0,
@@ -376,8 +395,8 @@
       "releaseDate": "2026-03-25"
     },
     {
-      "id": "lyria-3-clip-preview",
-      "name": "Lyria 3 Clip Preview",
+      "id": "lyria-3-pro-preview",
+      "name": "Lyria 3 Pro Preview",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0,
@@ -426,8 +445,8 @@
       "releaseDate": "2026-02-26"
     },
     {
-      "id": "gemini-3.1-pro-preview-customtools",
-      "name": "Gemini 3.1 Pro Preview Custom Tools",
+      "id": "gemini-3.1-pro-preview",
+      "name": "Gemini 3.1 Pro Preview",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 2,
@@ -445,8 +464,8 @@
       "releaseDate": "2026-02-19"
     },
     {
-      "id": "gemini-3.1-pro-preview",
-      "name": "Gemini 3.1 Pro Preview",
+      "id": "gemini-3.1-pro-preview-customtools",
+      "name": "Gemini 3.1 Pro Preview Custom Tools",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 2,
@@ -499,8 +518,8 @@
       "releaseDate": "2025-11-20"
     },
     {
-      "id": "veo-3.1-generate-preview",
-      "name": "Veo 3.1",
+      "id": "veo-3.1-fast-generate-preview",
+      "name": "Veo 3.1 fast",
       "contextWindow": 480,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -514,8 +533,8 @@
       "releaseDate": "2025-10-15"
     },
     {
-      "id": "veo-3.1-fast-generate-preview",
-      "name": "Veo 3.1 fast",
+      "id": "veo-3.1-generate-preview",
+      "name": "Veo 3.1",
       "contextWindow": 480,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -562,6 +581,25 @@
       "releaseDate": "2025-08-26"
     },
     {
+      "id": "gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash-Lite",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-17"
+    },
+    {
       "id": "gemini-2.5-flash",
       "name": "Gemini 2.5 Flash",
       "contextWindow": 1048576,
@@ -600,25 +638,6 @@
       "releaseDate": "2025-06-17"
     },
     {
-      "id": "gemini-2.5-flash-lite",
-      "name": "Gemini 2.5 Flash-Lite",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-06-17"
-    },
-    {
       "id": "gemini-embedding-001",
       "name": "Gemini Embedding 001",
       "contextWindow": 2048,
@@ -633,12 +652,12 @@
       "releaseDate": "2025-05-20"
     },
     {
-      "id": "gemini-2.5-flash-preview-tts",
-      "name": "Gemini 2.5 Flash Preview TTS",
+      "id": "gemini-2.5-pro-preview-tts",
+      "name": "Gemini 2.5 Pro Preview TTS",
       "contextWindow": 8192,
       "maxOutput": 16384,
-      "inputPrice": 0.5,
-      "outputPrice": 10,
+      "inputPrice": 1,
+      "outputPrice": 20,
       "capabilities": [
         "chat",
         "streaming"
@@ -647,12 +666,12 @@
       "releaseDate": "2025-05-01"
     },
     {
-      "id": "gemini-2.5-pro-preview-tts",
-      "name": "Gemini 2.5 Pro Preview TTS",
+      "id": "gemini-2.5-flash-preview-tts",
+      "name": "Gemini 2.5 Flash Preview TTS",
       "contextWindow": 8192,
       "maxOutput": 16384,
-      "inputPrice": 1,
-      "outputPrice": 20,
+      "inputPrice": 0.5,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "streaming"

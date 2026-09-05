@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "umans-deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 393215,
+      "inputPrice": 1.32,
+      "outputPrice": 3.96,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-12"
+    },
+    {
       "id": "umans-deepseek-v4-flash-0731",
       "name": "DeepSeek V4 Flash",
       "contextWindow": 1048576,
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-07-31"
     },
     {

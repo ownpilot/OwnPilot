@@ -30,23 +30,6 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "zai-glm-4.7",
-      "name": "Z.AI GLM-4.7",
-      "contextWindow": 131072,
-      "maxOutput": 40960,
-      "inputPrice": 2.25,
-      "outputPrice": 2.75,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-07"
-    },
-    {
       "id": "gpt-oss-120b",
       "name": "GPT OSS 120B",
       "contextWindow": 131072,

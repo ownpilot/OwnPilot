@@ -203,8 +203,8 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "kimi-k2.6",
-      "name": "Kimi K2.6",
+      "id": "kimi-k2.6-nitro",
+      "name": "Kimi K2.6 Nitro",
       "contextWindow": 200000,
       "maxOutput": 32000,
       "inputPrice": 0.275,
@@ -221,8 +221,8 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "kimi-k2.6-nitro",
-      "name": "Kimi K2.6 Nitro",
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
       "contextWindow": 200000,
       "maxOutput": 32000,
       "inputPrice": 0.275,

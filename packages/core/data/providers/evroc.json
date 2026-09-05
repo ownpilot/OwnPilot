@@ -136,12 +136,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "Qwen/Qwen3-Embedding-8B",
-      "name": "Qwen3 Embedding 8B",
-      "contextWindow": 40960,
+      "id": "Qwen/Qwen3-Reranker-4B",
+      "name": "Qwen3 Reranker 4B",
+      "contextWindow": 32000,
       "maxOutput": 4096,
-      "inputPrice": 0.115,
-      "outputPrice": 0.115,
+      "inputPrice": 0.0575,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "streaming"
@@ -150,12 +150,12 @@
       "releaseDate": "2025-07-30"
     },
     {
-      "id": "Qwen/Qwen3-Reranker-4B",
-      "name": "Qwen3 Reranker 4B",
-      "contextWindow": 32000,
+      "id": "Qwen/Qwen3-Embedding-8B",
+      "name": "Qwen3 Embedding 8B",
+      "contextWindow": 40960,
       "maxOutput": 4096,
-      "inputPrice": 0.0575,
-      "outputPrice": 0,
+      "inputPrice": 0.115,
+      "outputPrice": 0.115,
       "capabilities": [
         "chat",
         "streaming"

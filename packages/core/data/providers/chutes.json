@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "Qwen/Qwen3.8-27B-TEE",
+      "name": "Qwen3.8 27B TEE",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.4,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-16"
+    },
+    {
       "id": "deepseek-ai/DeepSeek-V4-Flash-0731-TEE",
       "name": "DeepSeek V4 Flash 0731 TEE",
       "contextWindow": 1048576,
@@ -25,7 +43,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-07-31"
     },
     {

@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "databricks-gpt-5-6-sol",
-      "name": "GPT-5.6 Sol",
-      "contextWindow": 1050000,
+      "id": "databricks-gpt-5-6-luna",
+      "name": "GPT-5.6 Luna",
+      "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 30,
+      "inputPrice": 1,
+      "outputPrice": 6,
       "capabilities": [
         "chat",
         "vision",
@@ -48,12 +48,12 @@
       "releaseDate": "2026-07-09"
     },
     {
-      "id": "databricks-gpt-5-6-luna",
-      "name": "GPT-5.6 Luna",
-      "contextWindow": 400000,
+      "id": "databricks-gpt-5-6-sol",
+      "name": "GPT-5.6 Sol",
+      "contextWindow": 1050000,
       "maxOutput": 128000,
-      "inputPrice": 1,
-      "outputPrice": 6,
+      "inputPrice": 5,
+      "outputPrice": 30,
       "capabilities": [
         "chat",
         "vision",
@@ -136,12 +136,12 @@
       "releaseDate": "2026-04-16"
     },
     {
-      "id": "databricks-gpt-5-4-nano",
-      "name": "GPT-5.4 nano",
+      "id": "databricks-gpt-5-4-mini",
+      "name": "GPT-5.4 mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.2,
-      "outputPrice": 1.25,
+      "inputPrice": 0.75,
+      "outputPrice": 4.5,
       "capabilities": [
         "chat",
         "vision",
@@ -154,12 +154,12 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "databricks-gpt-5-4-mini",
-      "name": "GPT-5.4 mini",
+      "id": "databricks-gpt-5-4-nano",
+      "name": "GPT-5.4 nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.75,
-      "outputPrice": 4.5,
+      "inputPrice": 0.2,
+      "outputPrice": 1.25,
       "capabilities": [
         "chat",
         "vision",
@@ -404,12 +404,12 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "databricks-gpt-5-nano",
-      "name": "GPT-5 Nano",
+      "id": "databricks-gpt-5-mini",
+      "name": "GPT-5 Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "vision",
@@ -440,12 +440,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "databricks-gpt-5-mini",
-      "name": "GPT-5 Mini",
+      "id": "databricks-gpt-5-nano",
+      "name": "GPT-5 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -458,16 +458,16 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "databricks-gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
-      "inputPrice": 0.072,
-      "outputPrice": 0.28,
+      "id": "databricks-claude-opus-4-1",
+      "name": "Claude Opus 4.1 (latest)",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
-        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -492,16 +492,16 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "databricks-claude-opus-4-1",
-      "name": "Claude Opus 4.1 (latest)",
-      "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "id": "databricks-gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.072,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],

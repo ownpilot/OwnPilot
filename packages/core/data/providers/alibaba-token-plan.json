@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro 0813",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-12"
+    },
+    {
       "id": "qwen3.8-max",
       "name": "Qwen3.8 Max",
       "contextWindow": 1000000,
@@ -26,7 +43,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-08-03"
     },
     {
@@ -162,8 +179,8 @@
       "releaseDate": "2026-06-02"
     },
     {
-      "id": "wan2.7-image-pro",
-      "name": "Wan2.7 Image Pro",
+      "id": "wan2.7-image",
+      "name": "Wan2.7 Image",
       "contextWindow": 8192,
       "maxOutput": 0,
       "inputPrice": 0,
@@ -176,8 +193,8 @@
       "releaseDate": "2026-05-29"
     },
     {
-      "id": "wan2.7-image",
-      "name": "Wan2.7 Image",
+      "id": "wan2.7-image-pro",
+      "name": "Wan2.7 Image Pro",
       "contextWindow": 8192,
       "maxOutput": 0,
       "inputPrice": 0,
@@ -312,8 +329,8 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "qwen-image-2.0-pro",
-      "name": "Qwen Image 2.0 Pro",
+      "id": "qwen-image-2.0",
+      "name": "Qwen Image 2.0",
       "contextWindow": 8192,
       "maxOutput": 0,
       "inputPrice": 0,
@@ -326,8 +343,8 @@
       "releaseDate": "2026-03-03"
     },
     {
-      "id": "qwen-image-2.0",
-      "name": "Qwen Image 2.0",
+      "id": "qwen-image-2.0-pro",
+      "name": "Qwen Image 2.0 Pro",
       "contextWindow": 8192,
       "maxOutput": 0,
       "inputPrice": 0,

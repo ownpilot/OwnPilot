@@ -12,42 +12,8 @@
   },
   "models": [
     {
-      "id": "DeepSeek-V4-Flash-0731",
-      "name": "DeepSeek V4 Flash 0731",
-      "contextWindow": 512000,
-      "maxOutput": 384000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2026-07-31"
-    },
-    {
-      "id": "GLM-5.2-NVFP4",
-      "name": "GLM-5.2 NVFP4",
-      "contextWindow": 512000,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-13"
-    },
-    {
-      "id": "Kimi-K2.7-Code",
-      "name": "Kimi K2.7 Code",
+      "id": "Qwen3.8-27B",
+      "name": "Qwen3.8-27B",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0,
@@ -60,8 +26,8 @@
         "reasoning",
         "streaming"
       ],
-      "default": false,
-      "releaseDate": "2026-06-12"
+      "default": true,
+      "releaseDate": "2026-08-14"
     },
     {
       "id": "Qwen/Qwen3.6-35B-A3B-FP8",

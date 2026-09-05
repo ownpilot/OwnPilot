@@ -86,8 +86,8 @@
       "releaseDate": "2026-02-23"
     },
     {
-      "id": "qwen3.5-4b",
-      "name": "Qwen3.5 4B",
+      "id": "qwen3.5-2b",
+      "name": "Qwen3.5 2B",
       "contextWindow": 32768,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -116,8 +116,8 @@
       "releaseDate": "2025-11-01"
     },
     {
-      "id": "qwen3.5-2b",
-      "name": "Qwen3.5 2B",
+      "id": "qwen3.5-4b",
+      "name": "Qwen3.5 4B",
       "contextWindow": 32768,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -131,8 +131,8 @@
       "releaseDate": "2025-11-01"
     },
     {
-      "id": "gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -148,8 +148,8 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,

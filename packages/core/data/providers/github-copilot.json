@@ -12,6 +12,42 @@
   },
   "models": [
     {
+      "id": "gemini-3.7-flash",
+      "name": "Gemini 3.7 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 0.75,
+      "outputPrice": 3.75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-13"
+    },
+    {
+      "id": "grok-4.6",
+      "name": "Grok 4.6",
+      "contextWindow": 500000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-08-12"
+    },
+    {
       "id": "mai-code-1.1-flash",
       "name": "MAI-Code-1.1-Flash",
       "contextWindow": 256000,
@@ -26,7 +62,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-08-11"
     },
     {
@@ -296,12 +332,12 @@
       "releaseDate": "2026-04-16"
     },
     {
-      "id": "gpt-5.4-nano",
-      "name": "GPT-5.4 nano",
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.2,
-      "outputPrice": 1.25,
+      "inputPrice": 0.75,
+      "outputPrice": 4.5,
       "capabilities": [
         "chat",
         "vision",
@@ -314,12 +350,12 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "gpt-5.4-mini",
-      "name": "GPT-5.4 mini",
+      "id": "gpt-5.4-nano",
+      "name": "GPT-5.4 nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.75,
-      "outputPrice": 4.5,
+      "inputPrice": 0.2,
+      "outputPrice": 1.25,
       "capabilities": [
         "chat",
         "vision",
@@ -421,8 +457,8 @@
       "releaseDate": "2026-02-05"
     },
     {
-      "id": "gpt-5.2-codex",
-      "name": "GPT-5.2 Codex",
+      "id": "gpt-5.2",
+      "name": "GPT-5.2",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.75,
@@ -439,8 +475,8 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "gpt-5.2",
-      "name": "GPT-5.2",
+      "id": "gpt-5.2-codex",
+      "name": "GPT-5.2 Codex",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.75,

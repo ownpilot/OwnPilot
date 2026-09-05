@@ -29,8 +29,8 @@
       "releaseDate": "2026-07-24"
     },
     {
-      "id": "duo-chat-gpt-5-6-terra",
-      "name": "Agentic Chat (GPT-5.6 Terra)",
+      "id": "duo-chat-gpt-5-6-sol",
+      "name": "Agentic Chat (GPT-5.6 Sol)",
       "contextWindow": 1050000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -65,8 +65,8 @@
       "releaseDate": "2026-07-09"
     },
     {
-      "id": "duo-chat-gpt-5-6-sol",
-      "name": "Agentic Chat (GPT-5.6 Sol)",
+      "id": "duo-chat-gpt-5-6-terra",
+      "name": "Agentic Chat (GPT-5.6 Terra)",
       "contextWindow": 1050000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -169,8 +169,8 @@
       "releaseDate": "2026-04-16"
     },
     {
-      "id": "duo-chat-gpt-5-4-nano",
-      "name": "Agentic Chat (GPT-5.4 Nano)",
+      "id": "duo-chat-gpt-5-4-mini",
+      "name": "Agentic Chat (GPT-5.4 Mini)",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -187,8 +187,8 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "duo-chat-gpt-5-4-mini",
-      "name": "Agentic Chat (GPT-5.4 Mini)",
+      "id": "duo-chat-gpt-5-4-nano",
+      "name": "Agentic Chat (GPT-5.4 Nano)",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -293,8 +293,8 @@
       "releaseDate": "2026-01-23"
     },
     {
-      "id": "duo-chat-gpt-5-codex",
-      "name": "Agentic Chat (GPT-5 Codex)",
+      "id": "duo-chat-gpt-5-2-codex",
+      "name": "Agentic Chat (GPT-5.2 Codex)",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -329,8 +329,8 @@
       "releaseDate": "2026-01-22"
     },
     {
-      "id": "duo-chat-gpt-5-2-codex",
-      "name": "Agentic Chat (GPT-5.2 Codex)",
+      "id": "duo-chat-gpt-5-codex",
+      "name": "Agentic Chat (GPT-5 Codex)",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -365,8 +365,8 @@
       "releaseDate": "2026-01-22"
     },
     {
-      "id": "duo-chat-haiku-4-5",
-      "name": "Agentic Chat (Claude Haiku 4.5)",
+      "id": "duo-chat-opus-4-5",
+      "name": "Agentic Chat (Claude Opus 4.5)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 0,
@@ -399,8 +399,8 @@
       "releaseDate": "2026-01-08"
     },
     {
-      "id": "duo-chat-opus-4-5",
-      "name": "Agentic Chat (Claude Opus 4.5)",
+      "id": "duo-chat-haiku-4-5",
+      "name": "Agentic Chat (Claude Haiku 4.5)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 0,

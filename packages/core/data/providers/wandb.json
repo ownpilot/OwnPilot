@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "Qwen/Qwen3.8-27B",
+      "name": "Qwen3.8 27B",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.4,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-14"
+    },
+    {
       "id": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
       "name": "Nemotron 3.5 Lightning",
       "contextWindow": 262144,
@@ -25,7 +43,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-08-11"
     },
     {
@@ -166,12 +184,12 @@
       "releaseDate": "2026-04-29"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V4-Flash",
-      "name": "DeepSeek V4 Flash",
+      "id": "deepseek-ai/DeepSeek-V4-Pro",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1048576,
       "maxOutput": 1048576,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
+      "inputPrice": 1.15,
+      "outputPrice": 2.55,
       "capabilities": [
         "chat",
         "function_calling",
@@ -183,12 +201,12 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V4-Pro",
-      "name": "DeepSeek V4 Pro",
+      "id": "deepseek-ai/DeepSeek-V4-Flash",
+      "name": "DeepSeek V4 Flash",
       "contextWindow": 1048576,
       "maxOutput": 1048576,
-      "inputPrice": 1.15,
-      "outputPrice": 2.55,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "function_calling",
@@ -357,12 +375,12 @@
       "releaseDate": "2025-08-21"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "gpt-oss-20b",
+      "id": "openai/gpt-oss-120b",
+      "name": "gpt-oss-120b",
       "contextWindow": 131072,
       "maxOutput": 131072,
       "inputPrice": 0.03,
-      "outputPrice": 0.13,
+      "outputPrice": 0.17,
       "capabilities": [
         "chat",
         "function_calling",
@@ -374,12 +392,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "gpt-oss-120b",
+      "id": "openai/gpt-oss-20b",
+      "name": "gpt-oss-20b",
       "contextWindow": 131072,
       "maxOutput": 131072,
       "inputPrice": 0.03,
-      "outputPrice": 0.17,
+      "outputPrice": 0.13,
       "capabilities": [
         "chat",
         "function_calling",
@@ -455,12 +473,12 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "meta-llama/Llama-3.1-8B-Instruct",
-      "name": "Llama 3.1 8B",
+      "id": "meta-llama/Llama-3.1-70B-Instruct",
+      "name": "Llama 3.1 70B",
       "contextWindow": 128000,
       "maxOutput": 128000,
-      "inputPrice": 0.22,
-      "outputPrice": 0.22,
+      "inputPrice": 0.8,
+      "outputPrice": 0.8,
       "capabilities": [
         "chat",
         "function_calling",
@@ -471,12 +489,12 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "meta-llama/Llama-3.1-70B-Instruct",
-      "name": "Llama 3.1 70B",
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "name": "Llama 3.1 8B",
       "contextWindow": 128000,
       "maxOutput": 128000,
-      "inputPrice": 0.8,
-      "outputPrice": 0.8,
+      "inputPrice": 0.22,
+      "outputPrice": 0.22,
       "capabilities": [
         "chat",
         "function_calling",

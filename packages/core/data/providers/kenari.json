@@ -136,8 +136,8 @@
       "releaseDate": "2026-06-13"
     },
     {
-      "id": "kimi-k2-7-code:free",
-      "name": "Kimi K2.7 Code (Free)",
+      "id": "kimi-k2-7-code",
+      "name": "Kimi K2.7 Code",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0,
@@ -154,8 +154,8 @@
       "releaseDate": "2026-06-12"
     },
     {
-      "id": "kimi-k2-7-code",
-      "name": "Kimi K2.7 Code",
+      "id": "kimi-k2-7-code:free",
+      "name": "Kimi K2.7 Code (Free)",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0,
@@ -344,24 +344,6 @@
       "releaseDate": "2026-04-23"
     },
     {
-      "id": "mimo-v2-5",
-      "name": "MiMo-V2.5",
-      "contextWindow": 1048576,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-22"
-    },
-    {
       "id": "mimo-v2-5:free",
       "name": "MiMo-V2.5 (Free)",
       "contextWindow": 1048576,
@@ -396,19 +378,22 @@
       "releaseDate": "2026-04-22"
     },
     {
-      "id": "gpt-image-2",
-      "name": "GPT-Image-2",
-      "contextWindow": 272000,
-      "maxOutput": 16384,
+      "id": "mimo-v2-5",
+      "name": "MiMo-V2.5",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-21"
+      "releaseDate": "2026-04-22"
     },
     {
       "id": "kimi-k2-6",
@@ -423,6 +408,21 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "gpt-image-2",
+      "name": "GPT-Image-2",
+      "contextWindow": 272000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
         "streaming"
       ],
       "default": false,
@@ -447,6 +447,23 @@
       "releaseDate": "2026-04-21"
     },
     {
+      "id": "claude-opus-4-7",
+      "name": "Claude Opus 4.7",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
       "id": "grok-build-0-1",
       "name": "Grok Build 0.1",
       "contextWindow": 256000,
@@ -458,23 +475,6 @@
         "vision",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-16"
-    },
-    {
-      "id": "claude-opus-4-7",
-      "name": "Claude Opus 4.7",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -535,8 +535,8 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "nemotron-3-super-120b-a12b",
-      "name": "Nemotron 3 Super 120B A12B",
+      "id": "nemotron-3-super-120b-a12b:free",
+      "name": "Nemotron 3 Super 120B A12B (Free)",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0,
@@ -551,8 +551,8 @@
       "releaseDate": "2026-03-11"
     },
     {
-      "id": "nemotron-3-super-120b-a12b:free",
-      "name": "Nemotron 3 Super 120B A12B (Free)",
+      "id": "nemotron-3-super-120b-a12b",
+      "name": "Nemotron 3 Super 120B A12B",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0,
@@ -599,22 +599,6 @@
       "releaseDate": "2025-12-15"
     },
     {
-      "id": "gpt-oss-20b",
-      "name": "GPT OSS 20B",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
       "id": "gpt-oss-120b",
       "name": "GPT OSS 120B",
       "contextWindow": 131072,
@@ -625,6 +609,22 @@
         "chat",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
         "reasoning",
         "streaming"
       ],

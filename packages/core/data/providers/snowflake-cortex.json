@@ -29,6 +29,24 @@
       "releaseDate": "2026-07-24"
     },
     {
+      "id": "openai-gpt-5.6-luna",
+      "name": "GPT-5.6 Luna",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
       "id": "openai-gpt-5.6-terra",
       "name": "GPT-5.6 Terra",
       "contextWindow": 1050000,
@@ -49,24 +67,6 @@
     {
       "id": "openai-gpt-5.6-sol",
       "name": "GPT-5.6 Sol",
-      "contextWindow": 1050000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-07-09"
-    },
-    {
-      "id": "openai-gpt-5.6-luna",
-      "name": "GPT-5.6 Luna",
       "contextWindow": 1050000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -327,6 +327,24 @@
       "releaseDate": "2025-09-29"
     },
     {
+      "id": "openai-gpt-5",
+      "name": "GPT-5",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-07"
+    },
+    {
       "id": "openai-gpt-5-mini",
       "name": "GPT-5 Mini",
       "contextWindow": 272000,
@@ -347,24 +365,6 @@
     {
       "id": "openai-gpt-5-nano",
       "name": "GPT-5 Nano",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-07"
-    },
-    {
-      "id": "openai-gpt-5",
-      "name": "GPT-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,

@@ -29,6 +29,22 @@
       "releaseDate": "2026-06-13"
     },
     {
+      "id": "deepseek-ai/DeepSeek-V4-Pro",
+      "name": "deepseek-ai/DeepSeek-V4-Pro",
+      "contextWindow": 1049000,
+      "maxOutput": 393000,
+      "inputPrice": 1.74,
+      "outputPrice": 3.48,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
       "id": "deepseek-ai/DeepSeek-V4-Flash",
       "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
@@ -39,22 +55,6 @@
         "chat",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-24"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-V4-Pro",
-      "name": "deepseek-ai/DeepSeek-V4-Pro",
-      "contextWindow": 1049000,
-      "maxOutput": 393000,
-      "inputPrice": 1.74,
-      "outputPrice": 3.48,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -298,8 +298,8 @@
       "releaseDate": "2026-01-27"
     },
     {
-      "id": "Pro/deepseek-ai/DeepSeek-V3.2",
-      "name": "Pro/deepseek-ai/DeepSeek-V3.2",
+      "id": "deepseek-ai/DeepSeek-V3.2",
+      "name": "deepseek-ai/DeepSeek-V3.2",
       "contextWindow": 164000,
       "maxOutput": 164000,
       "inputPrice": 0.27,
@@ -315,8 +315,8 @@
       "releaseDate": "2025-12-03"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V3.2",
-      "name": "deepseek-ai/DeepSeek-V3.2",
+      "id": "Pro/deepseek-ai/DeepSeek-V3.2",
+      "name": "Pro/deepseek-ai/DeepSeek-V3.2",
       "contextWindow": 164000,
       "maxOutput": 164000,
       "inputPrice": 0.27,
@@ -434,6 +434,23 @@
       "releaseDate": "2025-10-05"
     },
     {
+      "id": "Qwen/Qwen3-VL-235B-A22B-Instruct",
+      "name": "Qwen/Qwen3-VL-235B-A22B-Instruct",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0.3,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-04"
+    },
+    {
       "id": "Qwen/Qwen3-VL-235B-A22B-Thinking",
       "name": "Qwen/Qwen3-VL-235B-A22B-Thinking",
       "contextWindow": 262000,
@@ -452,25 +469,8 @@
       "releaseDate": "2025-10-04"
     },
     {
-      "id": "Qwen/Qwen3-VL-235B-A22B-Instruct",
-      "name": "Qwen/Qwen3-VL-235B-A22B-Instruct",
-      "contextWindow": 262000,
-      "maxOutput": 262000,
-      "inputPrice": 0.3,
-      "outputPrice": 1.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-10-04"
-    },
-    {
-      "id": "Pro/deepseek-ai/DeepSeek-V3.1-Terminus",
-      "name": "Pro/deepseek-ai/DeepSeek-V3.1-Terminus",
+      "id": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "name": "deepseek-ai/DeepSeek-V3.1-Terminus",
       "contextWindow": 164000,
       "maxOutput": 164000,
       "inputPrice": 0.27,
@@ -486,8 +486,8 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V3.1-Terminus",
-      "name": "deepseek-ai/DeepSeek-V3.1-Terminus",
+      "id": "Pro/deepseek-ai/DeepSeek-V3.1-Terminus",
+      "name": "Pro/deepseek-ai/DeepSeek-V3.1-Terminus",
       "contextWindow": 164000,
       "maxOutput": 164000,
       "inputPrice": 0.27,
@@ -583,22 +583,6 @@
       "releaseDate": "2025-07-30"
     },
     {
-      "id": "zai-org/GLM-4.5-Air",
-      "name": "zai-org/GLM-4.5-Air",
-      "contextWindow": 131000,
-      "maxOutput": 131000,
-      "inputPrice": 0.14,
-      "outputPrice": 0.86,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-28"
-    },
-    {
       "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
       "name": "Qwen/Qwen3-235B-A22B-Thinking-2507",
       "contextWindow": 262000,
@@ -610,6 +594,22 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "zai-org/GLM-4.5-Air",
+      "name": "zai-org/GLM-4.5-Air",
+      "contextWindow": 131000,
+      "maxOutput": 131000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.86,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -649,8 +649,8 @@
       "releaseDate": "2025-06-30"
     },
     {
-      "id": "Pro/deepseek-ai/DeepSeek-R1",
-      "name": "Pro/deepseek-ai/DeepSeek-R1",
+      "id": "deepseek-ai/DeepSeek-R1",
+      "name": "deepseek-ai/DeepSeek-R1",
       "contextWindow": 164000,
       "maxOutput": 164000,
       "inputPrice": 0.5,
@@ -666,8 +666,8 @@
       "releaseDate": "2025-05-28"
     },
     {
-      "id": "deepseek-ai/DeepSeek-R1",
-      "name": "deepseek-ai/DeepSeek-R1",
+      "id": "Pro/deepseek-ai/DeepSeek-R1",
+      "name": "Pro/deepseek-ai/DeepSeek-R1",
       "contextWindow": 164000,
       "maxOutput": 164000,
       "inputPrice": 0.5,
@@ -700,23 +700,6 @@
       "releaseDate": "2025-04-30"
     },
     {
-      "id": "Qwen/Qwen3-8B",
-      "name": "Qwen/Qwen3-8B",
-      "contextWindow": 131000,
-      "maxOutput": 131000,
-      "inputPrice": 0.06,
-      "outputPrice": 0.06,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-30"
-    },
-    {
       "id": "Qwen/Qwen3-32B",
       "name": "Qwen/Qwen3-32B",
       "contextWindow": 131000,
@@ -734,8 +717,25 @@
       "releaseDate": "2025-04-30"
     },
     {
-      "id": "Pro/deepseek-ai/DeepSeek-V3",
-      "name": "Pro/deepseek-ai/DeepSeek-V3",
+      "id": "Qwen/Qwen3-8B",
+      "name": "Qwen/Qwen3-8B",
+      "contextWindow": 131000,
+      "maxOutput": 131000,
+      "inputPrice": 0.06,
+      "outputPrice": 0.06,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-30"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3",
+      "name": "deepseek-ai/DeepSeek-V3",
       "contextWindow": 164000,
       "maxOutput": 164000,
       "inputPrice": 0.25,
@@ -750,8 +750,8 @@
       "releaseDate": "2024-12-26"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V3",
-      "name": "deepseek-ai/DeepSeek-V3",
+      "id": "Pro/deepseek-ai/DeepSeek-V3",
+      "name": "Pro/deepseek-ai/DeepSeek-V3",
       "contextWindow": 164000,
       "maxOutput": 164000,
       "inputPrice": 0.25,

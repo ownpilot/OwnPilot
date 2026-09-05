@@ -29,12 +29,12 @@
       "releaseDate": "2026-07-31"
     },
     {
-      "id": "zai-org/GLM-5.2-FP8",
+      "id": "z-ai/glm-5.2",
       "name": "GLM-5.2",
       "contextWindow": 202752,
       "maxOutput": 202752,
-      "inputPrice": 1.2,
-      "outputPrice": 4.2,
+      "inputPrice": 0.6,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -50,8 +50,8 @@
       "name": "Ambient Large",
       "contextWindow": 202752,
       "maxOutput": 202752,
-      "inputPrice": 1.05,
-      "outputPrice": 4.4,
+      "inputPrice": 0.6,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -63,12 +63,12 @@
       "releaseDate": "2026-06-13"
     },
     {
-      "id": "z-ai/glm-5.2",
+      "id": "zai-org/GLM-5.2-FP8",
       "name": "GLM-5.2",
       "contextWindow": 202752,
       "maxOutput": 202752,
-      "inputPrice": 1.05,
-      "outputPrice": 4.4,
+      "inputPrice": 1.2,
+      "outputPrice": 4.2,
       "capabilities": [
         "chat",
         "function_calling",

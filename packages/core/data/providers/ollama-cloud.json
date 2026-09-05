@@ -311,8 +311,8 @@
       "releaseDate": "2025-12-02"
     },
     {
-      "id": "gpt-oss:120b",
-      "name": "gpt-oss:120b",
+      "id": "gpt-oss:20b",
+      "name": "gpt-oss:20b",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -327,8 +327,8 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "gpt-oss:20b",
-      "name": "gpt-oss:20b",
+      "id": "gpt-oss:120b",
+      "name": "gpt-oss:120b",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,

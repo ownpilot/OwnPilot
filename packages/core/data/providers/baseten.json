@@ -12,10 +12,27 @@
   },
   "models": [
     {
+      "id": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "name": "Deepseek V4 Pro 0813",
+      "contextWindow": 1048576,
+      "maxOutput": 262144,
+      "inputPrice": 1.32,
+      "outputPrice": 3.96,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-12"
+    },
+    {
       "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
       "name": "Deepseek V4 Flash 0731",
       "contextWindow": 1048576,
-      "maxOutput": 1048576,
+      "maxOutput": 384000,
       "inputPrice": 0.13,
       "outputPrice": 0.26,
       "capabilities": [
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-07-31"
     },
     {
@@ -91,6 +108,7 @@
       "outputPrice": 6.6,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -108,6 +126,7 @@
       "outputPrice": 4.4,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -154,7 +173,7 @@
     {
       "id": "deepseek-ai/DeepSeek-V4-Pro",
       "name": "Deepseek V4 Pro",
-      "contextWindow": 262144,
+      "contextWindow": 1048576,
       "maxOutput": 262144,
       "inputPrice": 1.74,
       "outputPrice": 3.48,
@@ -221,6 +240,22 @@
       "releaseDate": "2026-03-11"
     },
     {
+      "id": "MiniMaxAI/MiniMax-M2.5",
+      "name": "MiniMax-M2.5",
+      "contextWindow": 204000,
+      "maxOutput": 204000,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
       "id": "zai-org/GLM-5",
       "name": "GLM 5",
       "contextWindow": 202800,
@@ -231,22 +266,6 @@
         "chat",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-12"
-    },
-    {
-      "id": "MiniMaxAI/MiniMax-M2.5",
-      "name": "MiniMax-M2.5",
-      "contextWindow": 204000,
-      "maxOutput": 204000,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "reasoning",
         "streaming"
       ],

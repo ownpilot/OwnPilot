@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "glm-5.3",
+      "name": "GLM-5.3",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.2,
+      "outputPrice": 4.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-14"
+    },
+    {
       "id": "deepseek-v4-flash",
       "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-07-31"
     },
     {
@@ -153,12 +170,12 @@
       "releaseDate": "2026-04-23"
     },
     {
-      "id": "gpt-5.4-nano",
-      "name": "GPT-5.4 Nano",
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.2,
-      "outputPrice": 1.25,
+      "inputPrice": 0.75,
+      "outputPrice": 4.5,
       "capabilities": [
         "chat",
         "vision",
@@ -171,12 +188,12 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "gpt-5.4-mini",
-      "name": "GPT-5.4 Mini",
+      "id": "gpt-5.4-nano",
+      "name": "GPT-5.4 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.75,
-      "outputPrice": 4.5,
+      "inputPrice": 0.2,
+      "outputPrice": 1.25,
       "capabilities": [
         "chat",
         "vision",
@@ -296,8 +313,8 @@
       "releaseDate": "2025-12-01"
     },
     {
-      "id": "gpt-5.1-codex",
-      "name": "GPT-5.1 Codex",
+      "id": "gpt-5.1-codex-max",
+      "name": "GPT-5.1 Codex Max",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.25,
@@ -314,8 +331,8 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1-codex-max",
-      "name": "GPT-5.1 Codex Max",
+      "id": "gpt-5.1-codex",
+      "name": "GPT-5.1 Codex",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.25,

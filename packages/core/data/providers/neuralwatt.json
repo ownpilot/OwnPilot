@@ -47,69 +47,6 @@
       "releaseDate": "2026-07-16"
     },
     {
-      "id": "glm-5.2-short-fast",
-      "name": "GLM 5.2 Short Fast",
-      "contextWindow": 199984,
-      "maxOutput": 199984,
-      "inputPrice": 1.45,
-      "outputPrice": 4.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-17"
-    },
-    {
-      "id": "glm-5.2-short",
-      "name": "GLM 5.2 Short",
-      "contextWindow": 199984,
-      "maxOutput": 199984,
-      "inputPrice": 1.45,
-      "outputPrice": 4.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-17"
-    },
-    {
-      "id": "glm-5.2",
-      "name": "GLM 5.2",
-      "contextWindow": 1048560,
-      "maxOutput": 1048560,
-      "inputPrice": 1.45,
-      "outputPrice": 4.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-17"
-    },
-    {
-      "id": "glm-5.2-short-flex",
-      "name": "GLM 5.2 Short Flex",
-      "contextWindow": 199984,
-      "maxOutput": 199984,
-      "inputPrice": 0.725,
-      "outputPrice": 2.25,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-17"
-    },
-    {
       "id": "glm-5.2-fast",
       "name": "GLM 5.2 Fast",
       "contextWindow": 1048560,
@@ -141,6 +78,22 @@
       "releaseDate": "2026-06-17"
     },
     {
+      "id": "glm-5.2-short",
+      "name": "GLM 5.2 Short",
+      "contextWindow": 199984,
+      "maxOutput": 199984,
+      "inputPrice": 1.45,
+      "outputPrice": 4.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
       "id": "glm-5.2-short-fast-flex",
       "name": "GLM 5.2 Short Fast Flex",
       "contextWindow": 199984,
@@ -150,6 +103,53 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM 5.2",
+      "contextWindow": 1048560,
+      "maxOutput": 1048560,
+      "inputPrice": 1.45,
+      "outputPrice": 4.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "glm-5.2-short-fast",
+      "name": "GLM 5.2 Short Fast",
+      "contextWindow": 199984,
+      "maxOutput": 199984,
+      "inputPrice": 1.45,
+      "outputPrice": 4.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "glm-5.2-short-flex",
+      "name": "GLM 5.2 Short Flex",
+      "contextWindow": 199984,
+      "maxOutput": 199984,
+      "inputPrice": 0.725,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,

@@ -12,6 +12,25 @@
   },
   "models": [
     {
+      "id": "gemini-3.7-flash",
+      "name": "Gemini 3.7 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-13"
+    },
+    {
       "id": "grok-4.6",
       "name": "Grok 4.6",
       "contextWindow": 500000,
@@ -26,7 +45,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-08-12"
     },
     {
@@ -61,6 +80,25 @@
       ],
       "default": false,
       "releaseDate": "2026-08-06"
+    },
+    {
+      "id": "muse-spark-1.2",
+      "name": "Muse Spark 1.2",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 1.25,
+      "outputPrice": 4.25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-08-05"
     },
     {
       "id": "deepseek-v4-flash",
@@ -130,6 +168,22 @@
       "releaseDate": "2026-07-23"
     },
     {
+      "id": "laguna-s-2.1-free",
+      "name": "Laguna S 2.1 Free",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-21"
+    },
+    {
       "id": "gemini-3.5-flash-lite",
       "name": "Gemini 3.5 Flash Lite",
       "contextWindow": 1048576,
@@ -142,22 +196,6 @@
         "audio",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-07-21"
-    },
-    {
-      "id": "laguna-s-2.1-free",
-      "name": "Laguna S 2.1 Free",
-      "contextWindow": 256000,
-      "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -291,22 +329,6 @@
       "releaseDate": "2026-07-06"
     },
     {
-      "id": "longcat-2.0-free",
-      "name": "LongCat-2.0 Free",
-      "contextWindow": 1000000,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-30"
-    },
-    {
       "id": "claude-sonnet-5",
       "name": "Claude Sonnet 5",
       "contextWindow": 1000000,
@@ -316,6 +338,22 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "longcat-2.0-free",
+      "name": "LongCat-2.0 Free",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "function_calling",
         "reasoning",
         "streaming"
@@ -359,23 +397,6 @@
       "releaseDate": "2026-06-12"
     },
     {
-      "id": "claude-fable-5",
-      "name": "Claude Fable 5",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 10,
-      "outputPrice": 50,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-09"
-    },
-    {
       "id": "north-mini-code-free",
       "name": "North Mini Code Free",
       "contextWindow": 256000,
@@ -386,6 +407,23 @@
         "chat",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-09"
+    },
+    {
+      "id": "claude-fable-5",
+      "name": "Claude Fable 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 10,
+      "outputPrice": 50,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -565,6 +603,21 @@
       "releaseDate": "2026-04-23"
     },
     {
+      "id": "ling-2.6-flash-free",
+      "name": "Ling 2.6 Flash Free",
+      "contextWindow": 262100,
+      "maxOutput": 32800,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
       "id": "kimi-k2.6",
       "name": "Kimi K2.6",
       "contextWindow": 262144,
@@ -576,21 +629,6 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-21"
-    },
-    {
-      "id": "ling-2.6-flash-free",
-      "name": "Ling 2.6 Flash Free",
-      "contextWindow": 262100,
-      "maxOutput": 32800,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -613,6 +651,23 @@
       "releaseDate": "2026-04-20"
     },
     {
+      "id": "claude-opus-4-7",
+      "name": "Claude Opus 4.7",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
       "id": "grok-build-0.1",
       "name": "Grok Build 0.1",
       "contextWindow": 256000,
@@ -624,23 +679,6 @@
         "vision",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-16"
-    },
-    {
-      "id": "claude-opus-4-7",
-      "name": "Claude Opus 4.7",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -714,6 +752,22 @@
       "releaseDate": "2026-03-18"
     },
     {
+      "id": "mimo-v2-pro-free",
+      "name": "MiMo V2 Pro Free",
+      "contextWindow": 1048576,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-18"
+    },
+    {
       "id": "mimo-v2-omni-free",
       "name": "MiMo V2 Omni Free",
       "contextWindow": 262144,
@@ -732,28 +786,12 @@
       "releaseDate": "2026-03-18"
     },
     {
-      "id": "mimo-v2-pro-free",
-      "name": "MiMo V2 Pro Free",
-      "contextWindow": 1048576,
-      "maxOutput": 64000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-18"
-    },
-    {
-      "id": "gpt-5.4-nano",
-      "name": "GPT-5.4 Nano",
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.2,
-      "outputPrice": 1.25,
+      "inputPrice": 0.75,
+      "outputPrice": 4.5,
       "capabilities": [
         "chat",
         "vision",
@@ -766,12 +804,12 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "gpt-5.4-mini",
-      "name": "GPT-5.4 Mini",
+      "id": "gpt-5.4-nano",
+      "name": "GPT-5.4 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.75,
-      "outputPrice": 4.5,
+      "inputPrice": 0.2,
+      "outputPrice": 1.25,
       "capabilities": [
         "chat",
         "vision",
@@ -1004,6 +1042,23 @@
       "releaseDate": "2026-02-05"
     },
     {
+      "id": "kimi-k2.5-free",
+      "name": "Kimi K2.5 Free",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
       "id": "trinity-large-preview-free",
       "name": "Trinity Large Preview",
       "contextWindow": 131072,
@@ -1016,7 +1071,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-01-28"
+      "releaseDate": "2026-01-27"
     },
     {
       "id": "kimi-k2.5",
@@ -1025,23 +1080,6 @@
       "maxOutput": 65536,
       "inputPrice": 0.6,
       "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-27"
-    },
-    {
-      "id": "kimi-k2.5-free",
-      "name": "Kimi K2.5 Free",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
@@ -1103,12 +1141,12 @@
       "releaseDate": "2025-12-23"
     },
     {
-      "id": "glm-4.7-free",
-      "name": "GLM-4.7 Free",
+      "id": "glm-4.7",
+      "name": "GLM-4.7",
       "contextWindow": 204800,
       "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 0.6,
+      "outputPrice": 2.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1119,12 +1157,12 @@
       "releaseDate": "2025-12-22"
     },
     {
-      "id": "glm-4.7",
-      "name": "GLM-4.7",
+      "id": "glm-4.7-free",
+      "name": "GLM-4.7 Free",
       "contextWindow": 204800,
       "maxOutput": 131072,
-      "inputPrice": 0.6,
-      "outputPrice": 2.2,
+      "inputPrice": 0,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1242,12 +1280,12 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1",
-      "name": "GPT-5.1",
+      "id": "gpt-5.1-codex-max",
+      "name": "GPT-5.1 Codex Max",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.07,
-      "outputPrice": 8.5,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -1278,12 +1316,12 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1-codex-max",
-      "name": "GPT-5.1 Codex Max",
+      "id": "gpt-5.1",
+      "name": "GPT-5.1",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 1.07,
+      "outputPrice": 8.5,
       "capabilities": [
         "chat",
         "vision",
@@ -1428,12 +1466,12 @@
       "releaseDate": "2025-08-20"
     },
     {
-      "id": "gpt-5",
-      "name": "GPT-5",
+      "id": "gpt-5-nano",
+      "name": "GPT-5 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.07,
-      "outputPrice": 8.5,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -1446,12 +1484,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5-nano",
-      "name": "GPT-5 Nano",
+      "id": "gpt-5",
+      "name": "GPT-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
+      "inputPrice": 1.07,
+      "outputPrice": 8.5,
       "capabilities": [
         "chat",
         "vision",

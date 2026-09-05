@@ -29,12 +29,12 @@
       "releaseDate": "2026-06-30"
     },
     {
-      "id": "glm-5.2",
+      "id": "glm-5.2:free",
       "name": "GLM-5.2",
       "contextWindow": 1000000,
       "maxOutput": 131072,
-      "inputPrice": 1.6001,
-      "outputPrice": 5.0288,
+      "inputPrice": 0,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
@@ -46,12 +46,12 @@
       "releaseDate": "2026-06-13"
     },
     {
-      "id": "glm-5.2:free",
+      "id": "glm-5.2",
       "name": "GLM-5.2",
       "contextWindow": 1000000,
       "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 1.6001,
+      "outputPrice": 5.0288,
       "capabilities": [
         "chat",
         "function_calling",
@@ -166,8 +166,8 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-v4-flash:free",
-      "name": "DeepSeek V4 Flash",
+      "id": "deepseek-v4-pro:free",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
       "maxOutput": 384000,
       "inputPrice": 0,
@@ -183,8 +183,8 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-v4-pro:free",
-      "name": "DeepSeek V4 Pro",
+      "id": "deepseek-v4-flash:free",
+      "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
       "maxOutput": 384000,
       "inputPrice": 0,
@@ -304,12 +304,12 @@
       "releaseDate": "2026-03-18"
     },
     {
-      "id": "gpt-5.4",
+      "id": "gpt-5.4:free",
       "name": "GPT-5.4",
       "contextWindow": 1050000,
       "maxOutput": 128000,
-      "inputPrice": 1.8,
-      "outputPrice": 10.8,
+      "inputPrice": 0,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
@@ -322,12 +322,12 @@
       "releaseDate": "2026-03-05"
     },
     {
-      "id": "gpt-5.4:free",
+      "id": "gpt-5.4",
       "name": "GPT-5.4",
       "contextWindow": 1050000,
       "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 1.8,
+      "outputPrice": 10.8,
       "capabilities": [
         "chat",
         "vision",

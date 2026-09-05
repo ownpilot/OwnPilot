@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "fugu-ultra-20260615",
-      "name": "Fugu Ultra",
-      "contextWindow": 1000000,
-      "maxOutput": 1000000,
-      "inputPrice": 5,
-      "outputPrice": 30,
+      "id": "sakana-namazu",
+      "name": "Sakana Namazu",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.95,
+      "outputPrice": 4,
       "capabilities": [
         "chat",
         "vision",
@@ -27,10 +27,28 @@
         "streaming"
       ],
       "default": true,
+      "releaseDate": "2026-08-03"
+    },
+    {
+      "id": "fugu",
+      "name": "Fugu",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-06-15"
     },
     {
-      "id": "fugu-ultra",
+      "id": "fugu-ultra-20260615",
       "name": "Fugu Ultra",
       "contextWindow": 1000000,
       "maxOutput": 1000000,
@@ -48,12 +66,12 @@
       "releaseDate": "2026-06-15"
     },
     {
-      "id": "fugu",
-      "name": "Fugu",
+      "id": "fugu-ultra",
+      "name": "Fugu Ultra",
       "contextWindow": 1000000,
       "maxOutput": 1000000,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 5,
+      "outputPrice": 30,
       "capabilities": [
         "chat",
         "vision",

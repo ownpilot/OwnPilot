@@ -79,12 +79,12 @@
       "releaseDate": "2026-05-21"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V4-Flash",
-      "name": "DeepSeek V4 Flash",
-      "contextWindow": 1048575,
+      "id": "deepseek-ai/DeepSeek-V4-Pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1048576,
       "maxOutput": 384000,
-      "inputPrice": 0.112,
-      "outputPrice": 0.224,
+      "inputPrice": 1.392,
+      "outputPrice": 2.784,
       "capabilities": [
         "chat",
         "function_calling",
@@ -96,12 +96,12 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V4-Pro",
-      "name": "DeepSeek V4 Pro",
-      "contextWindow": 1048576,
+      "id": "deepseek-ai/DeepSeek-V4-Flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1048575,
       "maxOutput": 384000,
-      "inputPrice": 1.392,
-      "outputPrice": 2.784,
+      "inputPrice": 0.112,
+      "outputPrice": 0.224,
       "capabilities": [
         "chat",
         "function_calling",

@@ -47,25 +47,8 @@
       "releaseDate": "2026-07-16"
     },
     {
-      "id": "glm-5.2-ponytail",
-      "name": "GLM-5.2 Ponytail",
-      "contextWindow": 1000000,
-      "maxOutput": 131072,
-      "inputPrice": 1.254,
-      "outputPrice": 5.016,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-13"
-    },
-    {
-      "id": "glm-5.2-caveman",
-      "name": "GLM-5.2 Caveman",
+      "id": "glm-5.2-ponytail-lite",
+      "name": "GLM-5.2 Ponytail Lite",
       "contextWindow": 1000000,
       "maxOutput": 131072,
       "inputPrice": 1.254,
@@ -98,23 +81,6 @@
       "releaseDate": "2026-06-13"
     },
     {
-      "id": "glm-5.2",
-      "name": "GLM-5.2",
-      "contextWindow": 1000000,
-      "maxOutput": 131072,
-      "inputPrice": 1.254,
-      "outputPrice": 5.016,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-13"
-    },
-    {
       "id": "glm-5.2-caveman-ultra",
       "name": "GLM-5.2 Caveman Ultra",
       "contextWindow": 1000000,
@@ -132,8 +98,76 @@
       "releaseDate": "2026-06-13"
     },
     {
-      "id": "glm-5.2-ponytail-lite",
-      "name": "GLM-5.2 Ponytail Lite",
+      "id": "glm-5.2-caveman-lite",
+      "name": "GLM-5.2 Caveman Lite",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-caveman",
+      "name": "GLM-5.2 Caveman",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-honey-lite",
+      "name": "GLM-5.2 Honey Lite",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-ponytail",
+      "name": "GLM-5.2 Ponytail",
       "contextWindow": 1000000,
       "maxOutput": 131072,
       "inputPrice": 1.254,
@@ -168,40 +202,6 @@
     {
       "id": "glm-5.2-honey",
       "name": "GLM-5.2 Honey",
-      "contextWindow": 1000000,
-      "maxOutput": 131072,
-      "inputPrice": 1.254,
-      "outputPrice": 5.016,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-13"
-    },
-    {
-      "id": "glm-5.2-honey-lite",
-      "name": "GLM-5.2 Honey Lite",
-      "contextWindow": 1000000,
-      "maxOutput": 131072,
-      "inputPrice": 1.254,
-      "outputPrice": 5.016,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-06-13"
-    },
-    {
-      "id": "glm-5.2-caveman-lite",
-      "name": "GLM-5.2 Caveman Lite",
       "contextWindow": 1000000,
       "maxOutput": 131072,
       "inputPrice": 1.254,
@@ -252,12 +252,12 @@
       "releaseDate": "2026-04-29"
     },
     {
-      "id": "kimi-k2.6",
-      "name": "Kimi K2.6",
+      "id": "kimi-k2.6-fast",
+      "name": "Kimi K2.6 Fast",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 0.7524,
-      "outputPrice": 4.275,
+      "inputPrice": 1.655,
+      "outputPrice": 8.778,
       "capabilities": [
         "chat",
         "vision",
@@ -270,12 +270,12 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "kimi-k2.6-fast",
-      "name": "Kimi K2.6 Fast",
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 1.655,
-      "outputPrice": 8.778,
+      "inputPrice": 0.7524,
+      "outputPrice": 4.275,
       "capabilities": [
         "chat",
         "vision",
@@ -492,22 +492,6 @@
       "releaseDate": "2025-07-15"
     },
     {
-      "id": "green-l",
-      "name": "Green L",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0.285,
-      "outputPrice": 0.912,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-06-20"
-    },
-    {
       "id": "mistral-small-3.2-24b-instruct-2506",
       "name": "Mistral Small 3.2",
       "contextWindow": 128000,
@@ -526,6 +510,22 @@
     {
       "id": "green-l-raw",
       "name": "Green L Raw",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.285,
+      "outputPrice": 0.912,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-20"
+    },
+    {
+      "id": "green-l",
+      "name": "Green L",
       "contextWindow": 128000,
       "maxOutput": 32768,
       "inputPrice": 0.285,

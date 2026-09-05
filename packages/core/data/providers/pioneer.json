@@ -310,12 +310,12 @@
       "releaseDate": "2026-06-01"
     },
     {
-      "id": "google/gemma-4-12B-it",
-      "name": "Gemma 4 12B IT",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.25,
-      "outputPrice": 0.25,
+      "id": "google/diffusiongemma-26B-A4B-it",
+      "name": "DiffusionGemma 26B-A4B IT",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.5,
+      "outputPrice": 0.5,
       "capabilities": [
         "chat",
         "function_calling",
@@ -326,12 +326,12 @@
       "releaseDate": "2026-05-31"
     },
     {
-      "id": "google/diffusiongemma-26B-A4B-it",
-      "name": "DiffusionGemma 26B-A4B IT",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.5,
-      "outputPrice": 0.5,
+      "id": "google/gemma-4-12B-it",
+      "name": "Gemma 4 12B IT",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.25,
+      "outputPrice": 0.25,
       "capabilities": [
         "chat",
         "function_calling",
@@ -413,8 +413,8 @@
       "releaseDate": "2026-05-07"
     },
     {
-      "id": "fastino/gliguard-LLMGuardrails-300M",
-      "name": "GLiGuard LLM Guardrails 300M",
+      "id": "fastino/gliner2-privacy-filter-PII-multi",
+      "name": "GLiNER2 Privacy Filter PII (Multi)",
       "contextWindow": 8192,
       "maxOutput": 4096,
       "inputPrice": 0.15,
@@ -428,8 +428,8 @@
       "releaseDate": "2026-04-30"
     },
     {
-      "id": "fastino/gliner2-privacy-filter-PII-multi",
-      "name": "GLiNER2 Privacy Filter PII (Multi)",
+      "id": "fastino/gliguard-LLMGuardrails-300M",
+      "name": "GLiGuard LLM Guardrails 300M",
       "contextWindow": 8192,
       "maxOutput": 4096,
       "inputPrice": 0.15,
@@ -479,12 +479,12 @@
       "releaseDate": "2026-04-27"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V4-Flash",
-      "name": "DeepSeek V4 Flash",
+      "id": "deepseek-ai/DeepSeek-V4-Pro",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
       "maxOutput": 131072,
-      "inputPrice": 0.1,
-      "outputPrice": 0.2,
+      "inputPrice": 0.435,
+      "outputPrice": 0.87,
       "capabilities": [
         "chat",
         "function_calling",
@@ -496,12 +496,12 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V4-Pro",
-      "name": "DeepSeek V4 Pro",
+      "id": "deepseek-ai/DeepSeek-V4-Flash",
+      "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
       "maxOutput": 131072,
-      "inputPrice": 0.435,
-      "outputPrice": 0.87,
+      "inputPrice": 0.1,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -531,18 +531,17 @@
       "releaseDate": "2026-04-23"
     },
     {
-      "id": "Qwen/Qwen3.6-27B",
-      "name": "Qwen3.6 27B",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.6,
-      "outputPrice": 0.6,
+      "id": "XiaomiMiMo/MiMo-V2.5",
+      "name": "MiMo-V2.5",
+      "contextWindow": 1050000,
+      "maxOutput": 131072,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "vision",
         "audio",
         "function_calling",
-        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -566,17 +565,18 @@
       "releaseDate": "2026-04-22"
     },
     {
-      "id": "XiaomiMiMo/MiMo-V2.5",
-      "name": "MiMo-V2.5",
-      "contextWindow": 1050000,
-      "maxOutput": 131072,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
+      "id": "Qwen/Qwen3.6-27B",
+      "name": "Qwen3.6 27B",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.6,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "vision",
         "audio",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -706,12 +706,12 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "google/gemma-4-E2B-it",
-      "name": "Gemma 4 E2B IT",
+      "id": "google/gemma-4-E4B-it",
+      "name": "Gemma 4 E4B IT",
       "contextWindow": 32768,
       "maxOutput": 32768,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "vision",
@@ -725,12 +725,12 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "google/gemma-4-E4B-it",
-      "name": "Gemma 4 E4B IT",
+      "id": "google/gemma-4-E2B-it",
+      "name": "Gemma 4 E2B IT",
       "contextWindow": 32768,
       "maxOutput": 32768,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
       "capabilities": [
         "chat",
         "vision",
@@ -778,12 +778,12 @@
       "releaseDate": "2026-03-18"
     },
     {
-      "id": "gpt-5.4-nano",
-      "name": "GPT-5.4 nano",
-      "contextWindow": 1047576,
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 mini",
+      "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.2,
-      "outputPrice": 1.25,
+      "inputPrice": 0.75,
+      "outputPrice": 4.5,
       "capabilities": [
         "chat",
         "vision",
@@ -796,12 +796,12 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "gpt-5.4-mini",
-      "name": "GPT-5.4 mini",
-      "contextWindow": 400000,
+      "id": "gpt-5.4-nano",
+      "name": "GPT-5.4 nano",
+      "contextWindow": 1047576,
       "maxOutput": 128000,
-      "inputPrice": 0.75,
-      "outputPrice": 4.5,
+      "inputPrice": 0.2,
+      "outputPrice": 1.25,
       "capabilities": [
         "chat",
         "vision",
@@ -919,23 +919,6 @@
       "releaseDate": "2026-02-17"
     },
     {
-      "id": "claude-opus-4-6",
-      "name": "Claude Opus 4.6",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
       "id": "gpt-5.3-codex",
       "name": "GPT-5.3 Codex",
       "contextWindow": 400000,
@@ -947,6 +930,23 @@
         "vision",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
+      "id": "claude-opus-4-6",
+      "name": "Claude Opus 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -1134,12 +1134,12 @@
       "releaseDate": "2025-08-21"
     },
     {
-      "id": "gpt-5-mini",
-      "name": "GPT-5 Mini",
+      "id": "gpt-5-nano",
+      "name": "GPT-5 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -1152,12 +1152,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5-nano",
-      "name": "GPT-5 Nano",
+      "id": "gpt-5-mini",
+      "name": "GPT-5 Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "vision",
@@ -1187,12 +1187,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.07,
-      "outputPrice": 0.3,
+      "maxOutput": 131072,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1204,12 +1204,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "maxOutput": 8192,
+      "inputPrice": 0.07,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1314,23 +1314,6 @@
       "releaseDate": "2025-06-10"
     },
     {
-      "id": "gpt-4.1-mini",
-      "name": "GPT-4.1 mini",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
       "id": "gpt-4.1-nano",
       "name": "GPT-4.1 nano",
       "contextWindow": 1047576,
@@ -1365,6 +1348,23 @@
       "releaseDate": "2025-04-14"
     },
     {
+      "id": "gpt-4.1-mini",
+      "name": "GPT-4.1 mini",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
       "id": "Qwen/Qwen3-32B",
       "name": "Qwen3 32B",
       "contextWindow": 131072,
@@ -1381,12 +1381,12 @@
       "releaseDate": "2025-04"
     },
     {
-      "id": "Qwen/Qwen3-8B",
-      "name": "Qwen3 8B",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
+      "id": "Qwen/Qwen3-1.7B-Base",
+      "name": "Qwen3 1.7B Base",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1397,12 +1397,12 @@
       "releaseDate": "2025-03-31"
     },
     {
-      "id": "Qwen/Qwen3-1.7B-Base",
-      "name": "Qwen3 1.7B Base",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
+      "id": "Qwen/Qwen3-8B",
+      "name": "Qwen3 8B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1581,12 +1581,12 @@
       "releaseDate": "2024-09-01"
     },
     {
-      "id": "meta-llama/Llama-3.2-1B-Instruct",
-      "name": "Llama 3.2 1B Instruct",
+      "id": "meta-llama/Llama-3.2-3B-Instruct",
+      "name": "Llama 3.2 3B Instruct",
       "contextWindow": 131072,
-      "maxOutput": 60000,
+      "maxOutput": 80000,
       "inputPrice": 0.1,
-      "outputPrice": 0.201,
+      "outputPrice": 0.335,
       "capabilities": [
         "chat",
         "reasoning",
@@ -1596,12 +1596,12 @@
       "releaseDate": "2024-08-31"
     },
     {
-      "id": "meta-llama/Llama-3.2-3B-Instruct",
-      "name": "Llama 3.2 3B Instruct",
+      "id": "meta-llama/Llama-3.2-1B-Instruct",
+      "name": "Llama 3.2 1B Instruct",
       "contextWindow": 131072,
-      "maxOutput": 80000,
+      "maxOutput": 60000,
       "inputPrice": 0.1,
-      "outputPrice": 0.335,
+      "outputPrice": 0.201,
       "capabilities": [
         "chat",
         "reasoning",

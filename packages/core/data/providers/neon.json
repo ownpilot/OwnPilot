@@ -248,12 +248,12 @@
       "releaseDate": "2026-05-19"
     },
     {
-      "id": "gpt-5-5-pro",
-      "name": "GPT-5.5 Pro",
+      "id": "gpt-5-5",
+      "name": "GPT-5.5",
       "contextWindow": 1050000,
       "maxOutput": 128000,
-      "inputPrice": 30,
-      "outputPrice": 180,
+      "inputPrice": 5,
+      "outputPrice": 30,
       "capabilities": [
         "chat",
         "vision",
@@ -266,12 +266,12 @@
       "releaseDate": "2026-04-23"
     },
     {
-      "id": "gpt-5-5",
-      "name": "GPT-5.5",
+      "id": "gpt-5-5-pro",
+      "name": "GPT-5.5 Pro",
       "contextWindow": 1050000,
       "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 30,
+      "inputPrice": 30,
+      "outputPrice": 180,
       "capabilities": [
         "chat",
         "vision",
@@ -429,12 +429,12 @@
       "releaseDate": "2026-02-17"
     },
     {
-      "id": "claude-opus-4-6",
-      "name": "Claude Opus 4.6",
-      "contextWindow": 1000000,
+      "id": "gpt-5-3-codex",
+      "name": "GPT-5.3 Codex",
+      "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
       "capabilities": [
         "chat",
         "vision",
@@ -447,12 +447,12 @@
       "releaseDate": "2026-02-05"
     },
     {
-      "id": "gpt-5-3-codex",
-      "name": "GPT-5.3 Codex",
-      "contextWindow": 400000,
+      "id": "claude-opus-4-6",
+      "name": "Claude Opus 4.6",
+      "contextWindow": 1000000,
       "maxOutput": 128000,
-      "inputPrice": 1.75,
-      "outputPrice": 14,
+      "inputPrice": 5,
+      "outputPrice": 25,
       "capabilities": [
         "chat",
         "vision",
@@ -590,6 +590,24 @@
       "releaseDate": "2025-09"
     },
     {
+      "id": "gpt-5-nano",
+      "name": "GPT-5 Nano",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-07"
+    },
+    {
       "id": "gpt-5",
       "name": "GPT-5",
       "contextWindow": 400000,
@@ -626,41 +644,6 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5-nano",
-      "name": "GPT-5 Nano",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-07"
-    },
-    {
-      "id": "gpt-oss-20b",
-      "name": "GPT OSS 20B",
-      "contextWindow": 131072,
-      "maxOutput": 25000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
       "id": "claude-opus-4-1",
       "name": "Claude Opus 4.1 (latest)",
       "contextWindow": 200000,
@@ -685,6 +668,23 @@
       "maxOutput": 25000,
       "inputPrice": 0.072,
       "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 25000,
+      "inputPrice": 0.05,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",

@@ -46,6 +46,22 @@
       "releaseDate": "2026-02-12"
     },
     {
+      "id": "arcee_ai/AFM/models/trinity-mini",
+      "name": "Trinity Mini",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.045,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
       "id": "mistralai/completion/models/Ministral-3-14B-Reasoning-2512",
       "name": "Ministral 3 14B Reasoning 2512",
       "contextWindow": 262144,
@@ -80,22 +96,6 @@
       "releaseDate": "2025-12"
     },
     {
-      "id": "arcee_ai/AFM/models/trinity-mini",
-      "name": "Trinity Mini",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.045,
-      "outputPrice": 0.15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12"
-    },
-    {
       "id": "deepseek-ai/deepseek-ocr/models/DeepSeek-OCR",
       "name": "DeepSeek OCR",
       "contextWindow": 8192,
@@ -111,12 +111,12 @@
       "releaseDate": "2025-10-20"
     },
     {
-      "id": "openai/chat-completion/models/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "openai/chat-completion/models/gpt-oss-120b-high-throughput",
+      "name": "GPT OSS 120B High Throughput",
       "contextWindow": 131072,
       "maxOutput": 16384,
-      "inputPrice": 0.045,
-      "outputPrice": 0.18,
+      "inputPrice": 0.09,
+      "outputPrice": 0.36,
       "capabilities": [
         "chat",
         "function_calling",
@@ -127,12 +127,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/chat-completion/models/gpt-oss-120b-high-throughput",
-      "name": "GPT OSS 120B High Throughput",
+      "id": "openai/chat-completion/models/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 16384,
-      "inputPrice": 0.09,
-      "outputPrice": 0.36,
+      "inputPrice": 0.045,
+      "outputPrice": 0.18,
       "capabilities": [
         "chat",
         "function_calling",

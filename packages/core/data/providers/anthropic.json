@@ -138,24 +138,6 @@
       "releaseDate": "2026-02-04"
     },
     {
-      "id": "claude-opus-4-5-20251101",
-      "name": "Claude Opus 4.5",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11-24"
-    },
-    {
       "id": "claude-opus-4-5",
       "name": "Claude Opus 4.5 (latest)",
       "contextWindow": 200000,
@@ -174,12 +156,12 @@
       "releaseDate": "2025-11-24"
     },
     {
-      "id": "claude-haiku-4-5",
-      "name": "Claude Haiku 4.5 (latest)",
+      "id": "claude-opus-4-5-20251101",
+      "name": "Claude Opus 4.5",
       "contextWindow": 200000,
       "maxOutput": 64000,
-      "inputPrice": 1,
-      "outputPrice": 5,
+      "inputPrice": 5,
+      "outputPrice": 25,
       "capabilities": [
         "chat",
         "vision",
@@ -189,7 +171,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-10-15"
+      "releaseDate": "2025-11-24"
     },
     {
       "id": "claude-haiku-4-5-20251001",
@@ -210,8 +192,26 @@
       "releaseDate": "2025-10-15"
     },
     {
-      "id": "claude-sonnet-4-5",
-      "name": "Claude Sonnet 4.5 (latest)",
+      "id": "claude-haiku-4-5",
+      "name": "Claude Haiku 4.5 (latest)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-15"
+    },
+    {
+      "id": "claude-sonnet-4-5-20250929",
+      "name": "Claude Sonnet 4.5",
       "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -228,8 +228,8 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "claude-sonnet-4-5-20250929",
-      "name": "Claude Sonnet 4.5",
+      "id": "claude-sonnet-4-5",
+      "name": "Claude Sonnet 4.5 (latest)",
       "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
