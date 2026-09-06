@@ -558,7 +558,9 @@ function buildPomodoroPlugin(): BuiltinPluginEntry {
       },
       async () => {
         const active = await pomodoroRepo.getActiveSession();
-        const todayStats = await pomodoroRepo.getDailyStats(new Date().toISOString().split('T')[0]);
+        // No explicit date: the repo's default is the LOCAL day (round 29) —
+        // passing a UTC day here bypassed it and reset "today" at 03:00 local.
+        const todayStats = await pomodoroRepo.getDailyStats();
         const totalStats = await pomodoroRepo.getTotalStats();
 
         if (active) {

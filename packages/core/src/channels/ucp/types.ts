@@ -320,10 +320,15 @@ function cardToText(content: UCPContent): UCPContent {
   if (content.title) parts.push(`**${content.title}**`);
   if (content.description) parts.push(content.description);
   if (content.url) parts.push(content.url);
+  // Declare 'markdown' (not 'plain'): the **title** bold then renders on
+  // markdown-capable channels, while adaptBlock's markdown strip — which runs
+  // AFTER this conversion — removes the asterisks for plain channels.
+  // Hardcoding 'plain' leaked literal '**' to plain channels and suppressed
+  // the bold on markdown channels (round 23).
   return {
     type: 'text',
     text: parts.join('\n'),
-    format: 'plain',
+    format: 'markdown',
   };
 }
 

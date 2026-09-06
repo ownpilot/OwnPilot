@@ -190,7 +190,9 @@ export interface SchedulerConfig {
 /**
  * Parse cron expression and get next run time
  * Supports: minute hour day month weekday
- * Special values: asterisk (any), asterisk/n (every n), n-m (range), n,m (list)
+ * Special values: asterisk (any), asterisk/n (every n), n-m (range), n,m (list
+ * of values and/or ranges), an optional /step suffix on ranges and values,
+ * and L in the day-of-month field (last day of the month)
  */
 export function parseCronExpression(cron: string): CronParts | null {
   const parts = cron.trim().split(/\s+/);
@@ -216,7 +218,10 @@ interface CronParts {
 }
 
 /**
- * Check if a cron part matches a value
+ * Check if a cron part matches a value.
+ * A part is a comma-separated list of elements; each element may be an
+ * asterisk, an asterisk with a step (asterisk/n), a range (n-m), a range
+ * with a step (n-m/s), a single value (n), or a value with a step (n/s).
  */
 function matchesCronPart(part: string, value: number, _max: number): boolean {
   // Any value
@@ -224,26 +229,55 @@ function matchesCronPart(part: string, value: number, _max: number): boolean {
     return true;
   }
 
-  // Step value (*/n)
-  if (part.startsWith('*/')) {
-    const step = parseInt(part.slice(2), 10);
+  // List of elements (n,m,...) — each element may itself be a range and/or
+  // carry a step suffix. Checked BEFORE range detection: "1-5,10" is a list
+  // whose first element is a range, not a range with a trailing list.
+  return part.split(',').some((element) => matchesCronElement(element, value));
+}
+
+/**
+ * Check if a single cron list element matches a value.
+ * Supported forms: asterisk with a step (asterisk/n), range (n-m),
+ * range with a step (n-m/s), exact (n), exact with a step (n/s).
+ */
+function matchesCronElement(element: string, value: number): boolean {
+  // Optional step suffix (/n)
+  let base = element;
+  let step = 1;
+  const slashIndex = element.indexOf('/');
+  if (slashIndex !== -1) {
+    step = parseInt(element.slice(slashIndex + 1), 10);
+    if (!Number.isFinite(step) || step <= 0) {
+      return false;
+    }
+    base = element.slice(0, slashIndex);
+  }
+
+  // Wildcard with step: */n → multiples of n
+  if (base === '*') {
     return value % step === 0;
   }
 
-  // Range (n-m)
-  if (part.includes('-')) {
-    const [start, end] = part.split('-').map((n) => parseInt(n, 10));
-    return start !== undefined && end !== undefined && value >= start && value <= end;
+  // Range with optional step: n-m, n-m/s
+  const dashIndex = base.indexOf('-');
+  if (dashIndex !== -1) {
+    const start = parseInt(base.slice(0, dashIndex), 10);
+    const end = parseInt(base.slice(dashIndex + 1), 10);
+    return (
+      Number.isFinite(start) &&
+      Number.isFinite(end) &&
+      value >= start &&
+      value <= end &&
+      (value - start) % step === 0
+    );
   }
 
-  // List (n,m,...)
-  if (part.includes(',')) {
-    const values = part.split(',').map((n) => parseInt(n, 10));
-    return values.includes(value);
+  // Exact value with optional step: n, n/s (start at n, every s)
+  const exact = parseInt(base, 10);
+  if (!Number.isFinite(exact)) {
+    return false;
   }
-
-  // Exact value
-  return parseInt(part, 10) === value;
+  return step === 1 ? value === exact : value >= exact && (value - exact) % step === 0;
 }
 
 /**
@@ -255,10 +289,18 @@ export function matchesCron(cron: string, date: Date = new Date()): boolean {
     return false;
   }
 
+  // Day-of-month supports the 'L' special token (last day of the month, as in
+  // Quartz/cronie): plain 5-field values cannot express it — a range like
+  // 28-31 fires on four consecutive days instead of only the month's last day.
+  const dayOfMonthMatch =
+    parts.dayOfMonth === 'L'
+      ? date.getDate() === new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+      : matchesCronPart(parts.dayOfMonth, date.getDate(), 31);
+
   return (
     matchesCronPart(parts.minute, date.getMinutes(), 59) &&
     matchesCronPart(parts.hour, date.getHours(), 23) &&
-    matchesCronPart(parts.dayOfMonth, date.getDate(), 31) &&
+    dayOfMonthMatch &&
     matchesCronPart(parts.month, date.getMonth() + 1, 12) &&
     matchesCronPart(parts.dayOfWeek, date.getDay(), 6)
   );
@@ -273,22 +315,61 @@ export function getNextRunTime(cron: string, from: Date = new Date()): Date | nu
     return null;
   }
 
+  // Pre-compile each field ONCE into a set of matching domain values. The
+  // scan below can run ~2.1M iterations (4-year horizon for never-fire or
+  // Feb-29-only expressions); calling matchesCron() per iteration re-parsed
+  // the expression every time (~780ms of synchronous CPU per validation in
+  // the gateway request path). Field-set membership keeps the exact
+  // matchesCronPart semantics (the same functions compile the sets) with
+  // none of the per-iteration string work. The day-of-month 'L' token is
+  // date-dependent, so it stays a flag evaluated per candidate date.
+  const minuteSet = compileFieldSet(parts.minute, 0, 59);
+  const hourSet = compileFieldSet(parts.hour, 0, 23);
+  const domIsLastDay = parts.dayOfMonth === 'L';
+  const domSet = domIsLastDay ? null : compileFieldSet(parts.dayOfMonth, 1, 31);
+  const monthSet = compileFieldSet(parts.month, 1, 12);
+  const dowSet = compileFieldSet(parts.dayOfWeek, 0, 6);
+
   // Start from next minute
   const next = new Date(from);
   next.setSeconds(0);
   next.setMilliseconds(0);
   next.setMinutes(next.getMinutes() + 1);
 
-  // Search for next matching time (up to 1 year ahead)
-  const maxIterations = 365 * 24 * 60; // 1 year in minutes
+  // Search for next matching time. The horizon must exceed the maximum gap
+  // between fires of any fire-able 5-field expression: Feb-29-only schedules
+  // (e.g. "0 9 29 2 *") fire 4 years (1461 days) apart, so a 365-day horizon
+  // wrongly rejects them as never-matching. 4 years + 1 day covers every
+  // fire-able expression through 2099 (2100 is not a leap year).
+  const maxIterations = (4 * 366 + 1) * 24 * 60; // ~4 years in minutes
   for (let i = 0; i < maxIterations; i++) {
-    if (matchesCron(cron, next)) {
+    if (
+      minuteSet.has(next.getMinutes()) &&
+      hourSet.has(next.getHours()) &&
+      (domIsLastDay
+        ? next.getDate() === new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate()
+        : domSet!.has(next.getDate())) &&
+      monthSet.has(next.getMonth() + 1) &&
+      dowSet.has(next.getDay())
+    ) {
       return next;
     }
     next.setMinutes(next.getMinutes() + 1);
   }
 
   return null;
+}
+
+/**
+ * Precompute the set of domain values a single cron field matches, using the
+ * same per-element grammar (matchesCronPart) the public matcher evaluates.
+ */
+function compileFieldSet(part: string, min: number, max: number): Set<number> {
+  const set = new Set<number>();
+  for (let value = min; value <= max; value++) {
+    if (matchesCronPart(part, value, max)) set.add(value);
+  }
+  return set;
 }
 
 /**
@@ -317,16 +398,22 @@ export function validateCronExpression(cron: string): {
   }
 
   // Validate each field's range
-  const fieldValidations: Array<{ name: string; value: string; min: number; max: number }> = [
+  const fieldValidations: Array<{
+    name: string;
+    value: string;
+    min: number;
+    max: number;
+    allowLastDay?: boolean;
+  }> = [
     { name: 'minute', value: parts.minute, min: 0, max: 59 },
     { name: 'hour', value: parts.hour, min: 0, max: 23 },
-    { name: 'day of month', value: parts.dayOfMonth, min: 1, max: 31 },
+    { name: 'day of month', value: parts.dayOfMonth, min: 1, max: 31, allowLastDay: true },
     { name: 'month', value: parts.month, min: 1, max: 12 },
     { name: 'day of week', value: parts.dayOfWeek, min: 0, max: 6 },
   ];
 
   for (const field of fieldValidations) {
-    const err = validateCronField(field.value, field.min, field.max);
+    const err = validateCronField(field.value, field.min, field.max, field.allowLastDay);
     if (err) {
       return { valid: false, error: `Invalid ${field.name} field "${field.value}": ${err}` };
     }
@@ -337,7 +424,7 @@ export function validateCronExpression(cron: string): {
   if (!nextFire) {
     return {
       valid: false,
-      error: 'Cron expression is syntactically valid but no matching time found within 365 days',
+      error: 'Cron expression is syntactically valid but no matching time found within 4 years',
     };
   }
 
@@ -347,14 +434,37 @@ export function validateCronExpression(cron: string): {
 /**
  * Validate a single cron field value
  */
-function validateCronField(value: string, min: number, max: number): string | null {
+function validateCronField(
+  value: string,
+  min: number,
+  max: number,
+  allowLastDay = false
+): string | null {
   if (value === '*') return null;
+
+  // 'L' = last day of the month (day-of-month field only)
+  if (value === 'L') {
+    return allowLastDay ? null : '"L" is only supported in the day-of-month field';
+  }
 
   // Step: */n
   if (value.startsWith('*/')) {
     const step = parseInt(value.slice(2), 10);
     if (isNaN(step) || step <= 0) return `step value must be a positive integer`;
     return null;
+  }
+
+  // Step suffixes in any other form (n-m/s, n/s, or list elements like
+  // "1-5/2,10") follow the same rule as */n. Without this check a malformed
+  // step either defers rejection to the full next-fire scan with a
+  // misleading "no matching time" error, or — inside a list — is silently
+  // dropped by the matcher's per-element evaluation, removing those days or
+  // hours from the schedule while validation still says "valid".
+  for (const element of value.split(',')) {
+    const slashIndex = element.indexOf('/');
+    if (slashIndex === -1) continue;
+    const step = parseInt(element.slice(slashIndex + 1), 10);
+    if (isNaN(step) || step <= 0) return `step value must be a positive integer`;
   }
 
   // Range: n-m
@@ -403,7 +513,7 @@ export const CRON_PRESETS = {
   everyWeekday: '0 9 * * 1-5',
   everyWeekend: '0 10 * * 0,6',
   firstOfMonth: '0 9 1 * *',
-  lastDayOfMonth: '0 9 28-31 * *',
+  lastDayOfMonth: '0 9 L * *',
 } as const;
 
 // =============================================================================

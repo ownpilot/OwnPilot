@@ -594,6 +594,57 @@ describe('TasksRepository', () => {
     });
   });
 
+  describe('window helpers day basis (round 30 regression)', () => {
+    // task.due_date is a user-LOCAL day string: the window helpers must
+    // derive their bounds from the local day, and "overdue" must be
+    // strictly-before-today (a task due today is due today, not overdue).
+    // The 01:00 discriminators engage on UTC+ hosts; on UTC CI they pass
+    // vacuously (UTC day === local day). The overdue check discriminates
+    // in every timezone.
+    function boundOf(sql: string, params: unknown[], re: RegExp): string {
+      const m = sql.match(re);
+      if (!m) throw new Error(`pattern ${re} not found in SQL`);
+      return params[Number(m[1]) - 1] as string;
+    }
+
+    afterEach(() => vi.useRealTimers());
+
+    it('getDueToday bounds are the LOCAL day', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 6, 1, 0, 0)); // local Sep 6 01:00 (UTC still Sep 5 on UTC+ hosts)
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.getDueToday();
+
+      const [sql, params] = mockAdapter.query.mock.calls[0]! as [string, unknown[]];
+      expect(boundOf(sql, params, /due_date >= \$(\d+)/)).toBe('2026-09-06');
+      expect(boundOf(sql, params, /due_date <= \$(\d+)/)).toBe('2026-09-06');
+    });
+
+    it('getOverdue bound is LOCAL yesterday — today is never overdue', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 6, 10, 0, 0)); // midday: UTC day === local day in any timezone
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.getOverdue();
+
+      const [sql, params] = mockAdapter.query.mock.calls[0]! as [string, unknown[]];
+      expect(boundOf(sql, params, /due_date <= \$(\d+)/)).toBe('2026-09-05');
+    });
+
+    it('getUpcoming bounds span LOCAL today through today+days', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 6, 1, 0, 0));
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.getUpcoming(7);
+
+      const [sql, params] = mockAdapter.query.mock.calls[0]! as [string, unknown[]];
+      expect(boundOf(sql, params, /due_date >= \$(\d+)/)).toBe('2026-09-06');
+      expect(boundOf(sql, params, /due_date <= \$(\d+)/)).toBe('2026-09-13');
+    });
+  });
+
   describe('count', () => {
     it('should return count of all tasks for user', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce({ count: '25' });

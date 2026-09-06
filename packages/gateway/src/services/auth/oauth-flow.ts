@@ -56,6 +56,14 @@ interface PendingDeviceFlow {
 const pendingDeviceFlows = new Map<string, PendingDeviceFlow>();
 
 /**
+ * In-flight token refreshes, keyed by provider. Concurrent callers share ONE
+ * refresh: with rotating (single-use) refresh tokens — RFC 6749 §10.4 — a
+ * second concurrent refresh would replay an already-consumed token, which
+ * providers commonly treat as a replay signal and invalidate the whole grant.
+ */
+const inflightRefreshes = new Map<string, Promise<ResolvedAuth>>();
+
+/**
  * Read OAuth config from the provider's catalog entry, with optional
  * user-supplied overrides layered on top. Returns null when neither
  * source produces a config that includes the three fields the device
@@ -212,11 +220,40 @@ export async function resolveAuthForRequest(provider: string): Promise<ResolvedA
     return auth;
   }
 
+  // Single-flight: join an in-flight refresh instead of starting a second
+  // one with the same (possibly already-consumed) refresh token.
+  const inflight = inflightRefreshes.get(provider);
+  if (inflight) return inflight;
+
+  const refresh = performRefresh(provider, auth, oauth).finally(() => {
+    inflightRefreshes.delete(provider);
+  });
+  inflightRefreshes.set(provider, refresh);
+  return refresh;
+}
+
+/** The OAuth variants of {@link ResolvedAuth} (narrowed from the union). */
+type OAuthResolvedAuth = Extract<ResolvedAuth, { method: 'oauth2_device_code' | 'oauth2_pkce' }>;
+
+/**
+ * Perform one refresh attempt, persisting the rotated token on success and
+ * falling back to the stale auth on failure (brief token-endpoint outages
+ * must not force a sign-out). Shared by all concurrent callers via
+ * {@link inflightRefreshes}.
+ *
+ * The non-null assertions are safe: {@link resolveAuthForRequest} validated
+ * `oauth.tokenUrl` / `oauth.clientId` / `auth.refreshToken` before calling.
+ */
+async function performRefresh(
+  provider: string,
+  auth: OAuthResolvedAuth,
+  oauth: ProviderOAuthConfig
+): Promise<ResolvedAuth> {
   try {
     const refreshed = await refreshAccessToken({
-      tokenUrl: oauth.tokenUrl,
-      clientId: oauth.clientId,
-      refreshToken: auth.refreshToken,
+      tokenUrl: oauth.tokenUrl!,
+      clientId: oauth.clientId!,
+      refreshToken: auth.refreshToken!,
     });
     const next: ResolvedAuth = {
       method: auth.method,
@@ -252,6 +289,7 @@ export async function signOutProvider(provider: string): Promise<void> {
  */
 export function _clearPendingDeviceFlowsForTest(): void {
   pendingDeviceFlows.clear();
+  inflightRefreshes.clear();
 }
 
 function tokenToResolvedAuth(

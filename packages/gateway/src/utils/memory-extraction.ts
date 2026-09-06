@@ -67,10 +67,18 @@ export function extractMemoriesFromResponse(rawContent: string): MemoryExtractio
     return { content: rawContent, memories: [] };
   }
 
+  // Strip the <memories> tag from content BEFORE parsing — the tag was
+  // recognized, so every branch below must return stripped content
+  // (contract: "Response content with <memories> tag stripped"). Returning
+  // rawContent on parse/normalization failures leaked the raw markup into
+  // the displayed chat (round 34); the sibling extractSuggestions strips on
+  // every path.
+  const content = rawContent.replace(MEMORIES_REGEX, '').trimEnd();
+
   try {
     const parsed: unknown = JSON.parse(match[1]);
     if (!Array.isArray(parsed)) {
-      return { content: rawContent, memories: [] };
+      return { content, memories: [] };
     }
 
     const memories = parsed
@@ -79,13 +87,11 @@ export function extractMemoriesFromResponse(rawContent: string): MemoryExtractio
       .slice(0, MAX_MEMORIES);
 
     if (memories.length === 0) {
-      return { content: rawContent, memories: [] };
+      return { content, memories: [] };
     }
 
-    // Strip the <memories> tag from content
-    const content = rawContent.replace(MEMORIES_REGEX, '').trimEnd();
     return { content, memories };
   } catch {
-    return { content: rawContent, memories: [] };
+    return { content, memories: [] };
   }
 }

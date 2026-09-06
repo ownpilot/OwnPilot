@@ -2275,13 +2275,15 @@ describe('pomodoro_status executor', () => {
     expect(mockPomodoroRepo.getActiveSession).toHaveBeenCalledOnce();
   });
 
-  it('calls getDailyStats with today date string', async () => {
+  it('delegates the day basis to the repository (round 29)', async () => {
     mockPomodoroRepo.getActiveSession.mockResolvedValue(null);
 
     const exec = await capturePomodoroTool('pomodoro_status');
     await exec!({});
-    const today = new Date().toISOString().split('T')[0];
-    expect(mockPomodoroRepo.getDailyStats).toHaveBeenCalledWith(today);
+    // No explicit date: the repo's no-arg default is the LOCAL day (pinned
+    // in pomodoro.test.ts) — the old explicit UTC day here reset the user's
+    // "today" count at 03:00 local instead of midnight (round 29).
+    expect(mockPomodoroRepo.getDailyStats).toHaveBeenCalledWith();
   });
 
   it('calls getTotalStats', async () => {

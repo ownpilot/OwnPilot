@@ -337,22 +337,36 @@ export class TasksRepository extends BaseRepository {
     return this.list({ projectId });
   }
 
+  /** Local-day 'YYYY-MM-DD' — task due_date values are user-local day
+   * strings, so every window helper must derive its bounds on the local day
+   * (round 30: the UTC clock admitted yesterday's tasks into "due today",
+   * marked TODAY's dues overdue for most of the local day, and shifted the
+   * upcoming window by one day in UTC+ timezones). */
+  private localDayString(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+      date.getDate()
+    ).padStart(2, '0')}`;
+  }
+
   async getDueToday(): Promise<Task[]> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.localDayString(new Date());
     return this.list({ dueAfter: today, dueBefore: today, status: ['pending', 'in_progress'] });
   }
 
   async getOverdue(): Promise<Task[]> {
-    const today = new Date().toISOString().split('T')[0];
-    return this.list({ dueBefore: today, status: ['pending', 'in_progress'] });
+    // Overdue = due strictly BEFORE the local today — the day is not over yet,
+    // so today's dues are "due today", never "overdue" (the inclusive `<=`
+    // bound must therefore be yesterday, not today).
+    const yesterday = this.localDayString(new Date(Date.now() - MS_PER_DAY));
+    return this.list({ dueBefore: yesterday, status: ['pending', 'in_progress'] });
   }
 
   async getUpcoming(days = 7): Promise<Task[]> {
     const today = new Date();
     const futureDate = new Date(today.getTime() + days * MS_PER_DAY);
     return this.list({
-      dueAfter: today.toISOString().split('T')[0],
-      dueBefore: futureDate.toISOString().split('T')[0],
+      dueAfter: this.localDayString(today),
+      dueBefore: this.localDayString(futureDate),
       status: ['pending', 'in_progress'],
     });
   }

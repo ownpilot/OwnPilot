@@ -44,6 +44,13 @@ export function validateCron(cron: string): { valid: boolean; error?: string } {
     const name = fieldNames[i]!;
 
     if (part === '*') continue;
+    // 'L' = last day of month — accepted by the backend scheduler
+    // (@ownpilot/core validateCronExpression) for the Day field only
+    if (part === 'L') {
+      if (name !== 'Day')
+        return { valid: false, error: `${name}: "L" is only supported in the Day field` };
+      continue;
+    }
     if (part.startsWith('*/')) {
       const step = parseInt(part.slice(2), 10);
       if (isNaN(step) || step <= 0)
@@ -54,11 +61,20 @@ export function validateCron(cron: string): { valid: boolean; error?: string } {
     const elements = part.split(',');
     for (const el of elements) {
       if (el.includes('-')) {
-        const [a, b] = el.split('-').map(Number);
+        // Range, optionally with a step suffix (n-m/s) — the same grammar the
+        // backend scheduler accepts and executes (@ownpilot/core
+        // validateCronField + matchesCronElement).
+        const [rangePart, stepPart] = el.split('/');
+        const [a, b] = rangePart!.split('-').map(Number);
         if (isNaN(a!) || isNaN(b!))
           return { valid: false, error: `${name}: invalid range "${el}"` };
         if (a! < min! || a! > max! || b! < min! || b! > max!)
           return { valid: false, error: `${name}: ${el} out of range ${min}-${max}` };
+        if (stepPart !== undefined) {
+          const step = parseInt(stepPart, 10);
+          if (isNaN(step) || step <= 0)
+            return { valid: false, error: `${name}: invalid step "/${stepPart}"` };
+        }
       } else {
         const n = parseInt(el, 10);
         if (isNaN(n)) return { valid: false, error: `${name}: "${el}" is not a number` };

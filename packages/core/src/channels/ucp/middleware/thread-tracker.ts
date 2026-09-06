@@ -37,8 +37,13 @@ export function createInMemoryThreadStore(): ThreadStore {
       return map.get(externalId);
     },
     setThread(externalId, threadId) {
+      // Refresh recency on update: Map.set alone preserves a key's ORIGINAL
+      // insertion position, so without the delete the "LRU eviction" below
+      // was insertion-order eviction — it dropped the oldest-still-ACTIVE
+      // thread mapping first while stale later entries survived.
+      if (map.has(externalId)) map.delete(externalId);
       map.set(externalId, threadId);
-      // LRU eviction — keep map bounded
+      // LRU eviction — keep map bounded (iteration order == write recency)
       if (map.size > 50_000) {
         const oldest = map.keys().next().value;
         if (oldest) map.delete(oldest);

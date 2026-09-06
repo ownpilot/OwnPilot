@@ -203,6 +203,27 @@ describe('parseSchedule', () => {
     expect(() => parseSchedule('Every Month 32nd')).toThrow(HeartbeatParseError);
   });
 
+  it('throws on invalid clock time (hour out of range)', () => {
+    expect(() => parseSchedule('Every Day 25:00')).toThrow(HeartbeatParseError);
+    expect(() => parseSchedule('Every Morning 24:00')).toThrow(HeartbeatParseError);
+  });
+
+  it('throws on invalid clock time (minute out of range)', () => {
+    expect(() => parseSchedule('Every Friday 12:99')).toThrow(HeartbeatParseError);
+    expect(() => parseSchedule('Weekdays 09:60')).toThrow(HeartbeatParseError);
+  });
+
+  it('throws on invalid bare hour', () => {
+    expect(() => parseSchedule('Every Day at 25')).toThrow(HeartbeatParseError);
+  });
+
+  it('valid times and defaults still parse when invalid ones are rejected', () => {
+    expect(parseSchedule('Every Day 9:30').cron).toBe('30 9 * * *');
+    expect(parseSchedule('Every Day at 14').cron).toBe('0 14 * * *');
+    expect(parseSchedule('Every Day').cron).toBe('0 9 * * *');
+    expect(parseSchedule('Every Morning').cron).toBe('0 8 * * *');
+  });
+
   // ==========================================================================
   // Normalized output
   // ==========================================================================

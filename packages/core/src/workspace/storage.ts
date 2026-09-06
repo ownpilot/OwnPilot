@@ -157,17 +157,31 @@ export class IsolatedStorage {
     return fs.readFile(resolvedPath);
   }
 
+  /** Size of the file currently at `resolvedPath` (0 if absent or not a file). */
+  private async sizeOfExistingFile(resolvedPath: string): Promise<number> {
+    try {
+      const stat = await fs.stat(resolvedPath);
+      return stat.isFile() ? stat.size : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   /**
    * Write a file to user's workspace
    */
   async writeFile(userId: string, filePath: string, content: string | Buffer): Promise<void> {
     const resolvedPath = this.validatePath(userId, filePath);
 
-    // Check storage quota before writing
+    // Check storage quota before writing. The quota bounds NET usage, so the
+    // bytes of the file being REPLACED are credited back — without this, an
+    // in-place rewrite is rejected once usage passes half the quota even
+    // though net usage never increases.
     const usage = await this.getStorageUsage(userId);
     const contentSize = typeof content === 'string' ? Buffer.byteLength(content) : content.length;
+    const replacedBytes = await this.sizeOfExistingFile(resolvedPath);
 
-    if (usage.usedBytes + contentSize > this.maxStorageBytes) {
+    if (usage.usedBytes - replacedBytes + contentSize > this.maxStorageBytes) {
       throw new StorageSecurityError(`Storage quota exceeded for user ${userId}`);
     }
 
@@ -215,11 +229,13 @@ export class IsolatedStorage {
     const resolvedSource = this.validatePath(userId, sourcePath);
     const resolvedDest = this.validatePath(userId, destPath);
 
-    // Check storage quota
+    // Check storage quota — credit back the bytes of an existing destination,
+    // since replacing it does not add to net usage.
     const sourceStats = await fs.stat(resolvedSource);
     const usage = await this.getStorageUsage(userId);
+    const replacedDestBytes = await this.sizeOfExistingFile(resolvedDest);
 
-    if (usage.usedBytes + sourceStats.size > this.maxStorageBytes) {
+    if (usage.usedBytes - replacedDestBytes + sourceStats.size > this.maxStorageBytes) {
       throw new StorageSecurityError(`Storage quota exceeded for user ${userId}`);
     }
 

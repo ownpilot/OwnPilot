@@ -321,4 +321,49 @@ describe('EventBus (new API)', () => {
       expect(h3).not.toHaveBeenCalled();
     });
   });
+
+  // ==========================================================================
+  // off() with once() subscriptions
+  // ==========================================================================
+
+  describe('off with once', () => {
+    it('off() cancels a once() subscription registered for the same handler', () => {
+      const handler = vi.fn();
+      bus.once('agent.error', handler);
+      bus.off('agent.error', handler);
+
+      bus.emit('agent.error', 'test', { agentId: 'a1', error: 'fail', iteration: 1 });
+      bus.emit('agent.error', 'test', { agentId: 'a1', error: 'fail', iteration: 2 });
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('off(original) cancels only the matching once-handler (siblings survive)', () => {
+      const cancelled = vi.fn();
+      const survivor = vi.fn();
+      bus.once('agent.error', cancelled);
+      bus.once('agent.error', survivor);
+      bus.off('agent.error', cancelled);
+
+      bus.emit('agent.error', 'test', { agentId: 'a1', error: 'fail', iteration: 1 });
+
+      expect(cancelled).not.toHaveBeenCalled();
+      expect(survivor).toHaveBeenCalledTimes(1);
+    });
+
+    it('returned unsubscribe and direct off() for on() handlers stay unchanged (boundary)', () => {
+      const onceHandler = vi.fn();
+      const unsub = bus.once('agent.error', onceHandler);
+      unsub();
+      bus.emit('agent.error', 'test', { agentId: 'a1', error: 'fail', iteration: 1 });
+      expect(onceHandler).not.toHaveBeenCalled();
+
+      const direct = vi.fn();
+      bus.on('agent.error', direct);
+      bus.emit('agent.error', 'test', { agentId: 'a1', error: 'fail', iteration: 2 });
+      bus.off('agent.error', direct);
+      bus.emit('agent.error', 'test', { agentId: 'a1', error: 'fail', iteration: 3 });
+      expect(direct).toHaveBeenCalledTimes(1);
+    });
+  });
 });

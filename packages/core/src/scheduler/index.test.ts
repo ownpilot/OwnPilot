@@ -294,6 +294,92 @@ describe('matchesCron', () => {
     expect(matchesCron('0 9 21 2 *', date)).toBe(true);
     expect(matchesCron('0 9 21 1 *', date)).toBe(false);
   });
+
+  // ---------- 'L' (last day of month) in the day-of-month field ----------
+
+  it('matches L on the last day of a 31-day month', () => {
+    expect(matchesCron('0 9 L * *', new Date('2026-01-31T09:00:00'))).toBe(true);
+  });
+
+  it('does not match L before the last day of a 31-day month', () => {
+    expect(matchesCron('0 9 L * *', new Date('2026-01-28T09:00:00'))).toBe(false);
+    expect(matchesCron('0 9 L * *', new Date('2026-01-29T09:00:00'))).toBe(false);
+    expect(matchesCron('0 9 L * *', new Date('2026-01-30T09:00:00'))).toBe(false);
+  });
+
+  it('matches L on the last day of a 30-day month but not earlier', () => {
+    expect(matchesCron('0 9 L * *', new Date('2026-04-28T09:00:00'))).toBe(false);
+    expect(matchesCron('0 9 L * *', new Date('2026-04-29T09:00:00'))).toBe(false);
+    expect(matchesCron('0 9 L * *', new Date('2026-04-30T09:00:00'))).toBe(true);
+  });
+
+  it('matches L on Feb 28 in a non-leap year', () => {
+    expect(matchesCron('0 9 L * *', new Date('2026-02-27T09:00:00'))).toBe(false);
+    expect(matchesCron('0 9 L * *', new Date('2026-02-28T09:00:00'))).toBe(true);
+  });
+
+  it('matches L on Feb 29 in a leap year', () => {
+    expect(matchesCron('0 9 L * *', new Date('2028-02-28T09:00:00'))).toBe(false);
+    expect(matchesCron('0 9 L * *', new Date('2028-02-29T09:00:00'))).toBe(true);
+  });
+
+  it('combines L with a restricted month field', () => {
+    // Last day of February only
+    expect(matchesCron('0 9 L 2 *', new Date('2026-02-28T09:00:00'))).toBe(true);
+    expect(matchesCron('0 9 L 2 *', new Date('2026-01-31T09:00:00'))).toBe(false);
+  });
+
+  it('does not treat L as a match in fields that do not support it', () => {
+    // 'L' in the hour field never matches a real hour value
+    expect(matchesCron('0 L * * *', new Date('2026-01-31T09:00:00'))).toBe(false);
+  });
+
+  // ---------- Compound field syntax (lists of values and/or ranges) ----------
+
+  it('list containing a range fires on a listed day outside the range part', () => {
+    // '0 9 1-5,10 * *' = 09:00 on days 1,2,3,4,5,10
+    expect(matchesCron('0 9 1-5,10 * *', new Date('2026-01-10T09:00:00'))).toBe(true);
+  });
+
+  it('list containing a range still fires inside the range part', () => {
+    expect(matchesCron('0 9 1-5,10 * *', new Date('2026-01-03T09:00:00'))).toBe(true);
+  });
+
+  it('list containing a range does not fire on an unlisted day', () => {
+    expect(matchesCron('0 9 1-5,10 * *', new Date('2026-01-06T09:00:00'))).toBe(false);
+  });
+
+  it('day-of-week list containing a range includes the listed weekday', () => {
+    // 2026-01-04 is a Sunday (0) ∈ {1,2,3,4,5,0}
+    expect(matchesCron('0 9 * * 1-5,0', new Date('2026-01-04T09:00:00'))).toBe(true);
+    // 2026-01-03 is a Saturday (6) ∉ {1,2,3,4,5,0}
+    expect(matchesCron('0 9 * * 1-5,0', new Date('2026-01-03T09:00:00'))).toBe(false);
+  });
+
+  it('range with step fires only on stepped values (5-10/2 = 5,7,9)', () => {
+    expect(matchesCron('5-10/2 * * * *', new Date('2026-01-10T14:05:00'))).toBe(true);
+    expect(matchesCron('5-10/2 * * * *', new Date('2026-01-10T14:07:00'))).toBe(true);
+    expect(matchesCron('5-10/2 * * * *', new Date('2026-01-10T14:06:00'))).toBe(false);
+    // 10 is inside the range but off-step
+    expect(matchesCron('5-10/2 * * * *', new Date('2026-01-10T14:10:00'))).toBe(false);
+  });
+
+  it('value with step fires from the start value (5/15 = 5,20,35,50)', () => {
+    expect(matchesCron('5/15 * * * *', new Date('2026-01-10T14:05:00'))).toBe(true);
+    expect(matchesCron('5/15 * * * *', new Date('2026-01-10T14:20:00'))).toBe(true);
+    expect(matchesCron('5/15 * * * *', new Date('2026-01-10T14:10:00'))).toBe(false);
+  });
+
+  it('mixed list of exact values and ranges', () => {
+    // '0 9 1,5-7,10 * *' = days 1,5,6,7,10
+    expect(matchesCron('0 9 1,5-7,10 * *', new Date('2026-01-06T09:00:00'))).toBe(true);
+    expect(matchesCron('0 9 1,5-7,10 * *', new Date('2026-01-08T09:00:00'))).toBe(false);
+  });
+
+  it('matches explicit Feb 29 in a leap year', () => {
+    expect(matchesCron('0 9 29 2 *', new Date('2028-02-29T09:00:00'))).toBe(true);
+    expect(matchesCron('0 9 29 2 *', new Date('2028-03-01T09:00:00'))).toBe(false);
+  });
 });
 
 // =============================================================================
@@ -396,6 +482,66 @@ describe('getNextRunTime', () => {
     expect(next!.getTime()).toBeGreaterThan(before);
     expect(next!.getTime()).toBeLessThanOrEqual(after + 61_000);
   });
+
+  // ---------- 'L' (last day of month) scheduling ----------
+
+  it('schedules the next L run on the actual last day, not a near-month duplicate', () => {
+    // From Jan 28 09:00:30 (a non-last day) — the buggy 28-31 range returned Jan 29,
+    // firing the "monthly" task on four consecutive days. Correct target: Jan 31.
+    const next = getNextRunTime('0 9 L * *', new Date('2026-01-28T09:00:30'));
+    expect(next).not.toBeNull();
+    expect(next!.getMonth()).toBe(0); // still January
+    expect(next!.getDate()).toBe(31); // the actual last day of January
+    expect(next!.getHours()).toBe(9);
+    expect(next!.getMinutes()).toBe(0);
+  });
+
+  it('rolls from the last day of January to the last day of February', () => {
+    const next = getNextRunTime('0 9 L * *', new Date('2026-01-31T09:00:30'));
+    expect(next).not.toBeNull();
+    expect(next!.getMonth()).toBe(1);
+    expect(next!.getDate()).toBe(28);
+  });
+
+  it('rolls from the last day of February into a 31-day month', () => {
+    const next = getNextRunTime('0 9 L * *', new Date('2026-02-28T09:00:30'));
+    expect(next).not.toBeNull();
+    expect(next!.getMonth()).toBe(2); // March
+    expect(next!.getDate()).toBe(31);
+  });
+
+  it('schedules the next run on a listed day outside the range part', () => {
+    // '0 9 1-5,10 * *' from Jan 6 09:00:30 → next fire is Jan 10, not next month
+    const next = getNextRunTime('0 9 1-5,10 * *', new Date('2026-01-06T09:00:30'));
+    expect(next).not.toBeNull();
+    expect(next!.getMonth()).toBe(0); // January
+    expect(next!.getDate()).toBe(10);
+    expect(next!.getHours()).toBe(9);
+  });
+
+  it('finds the next Feb 29 even when it is more than a year away', () => {
+    // A 365-day scan horizon wrongly returned null here: the next fire of a
+    // Feb-29-only schedule can be up to 4 years (1461 days) out.
+    const next = getNextRunTime('0 9 29 2 *', new Date('2026-09-05T10:30:00'));
+    expect(next).not.toBeNull();
+    expect(next!.getFullYear()).toBe(2028);
+    expect(next!.getMonth()).toBe(1);
+    expect(next!.getDate()).toBe(29);
+    expect(next!.getHours()).toBe(9);
+  });
+
+  it('boundary: finds Feb 29 when it is within a year', () => {
+    const next = getNextRunTime('0 9 29 2 *', new Date('2027-11-01T10:30:00'));
+    expect(next).not.toBeNull();
+    expect(next!.getFullYear()).toBe(2028);
+    expect(next!.getMonth()).toBe(1);
+    expect(next!.getDate()).toBe(29);
+  });
+
+  it('never-fire day/month combos still return null', () => {
+    // February 30 does not exist — must never match, at any horizon
+    expect(getNextRunTime('0 9 30 2 *', new Date('2026-09-05T10:30:00'))).toBeNull();
+  });
 });
 
 // =============================================================================
@@ -408,6 +554,69 @@ describe('validateCronExpression', () => {
     expect(result.valid).toBe(true);
     expect(result.nextFire).toBeInstanceOf(Date);
     expect(result.error).toBeUndefined();
+  });
+
+  it('accepts L in the day-of-month field', () => {
+    const result = validateCronExpression('0 9 L * *');
+    expect(result.valid).toBe(true);
+    expect(result.nextFire).toBeInstanceOf(Date);
+  });
+
+  it('accepts L combined with a month restriction', () => {
+    const result = validateCronExpression('0 9 L 2 *');
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects L in fields other than day-of-month', () => {
+    const result = validateCronExpression('0 L * * *');
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/day-of-month/);
+  });
+
+  it('accepts compound field syntax (lists of ranges, steps)', () => {
+    expect(validateCronExpression('0 9 1-5,10 * *').valid).toBe(true);
+    expect(validateCronExpression('0 9 * * 1-5,0').valid).toBe(true);
+    expect(validateCronExpression('5-10/2 * * * *').valid).toBe(true);
+    expect(validateCronExpression('5/15 * * * *').valid).toBe(true);
+  });
+
+  it('accepts leap-day schedules regardless of current date', () => {
+    // '0 9 29 2 *' fires every Feb 29; the 4-year horizon guarantees the next
+    // fire is always found (max gap between Feb 29s is 1461 days < 4y+1d).
+    const result = validateCronExpression('0 9 29 2 *');
+    expect(result.valid, result.error).toBe(true);
+    expect(result.nextFire).toBeInstanceOf(Date);
+  });
+
+  it('still rejects impossible day/month combinations', () => {
+    const result = validateCronExpression('0 9 30 2 *');
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/no matching time/i);
+  });
+
+  it('rejects malformed step suffixes in range/value/list forms up front', () => {
+    // Regression: field validation never parsed /step outside the asterisk
+    // form — '5-10/0' passed field checks and died only in the ~600ms
+    // next-fire scan with a misleading "no matching time" error, and list
+    // forms like '0 9 1-5/0,10 * *' were accepted as VALID while the
+    // matcher silently dropped the broken element (days 1-5 vanished).
+    for (const expr of [
+      '5-10/0 * * * *',
+      '5-10/xyz * * * *',
+      '5/xyz * * * *',
+      '0 9 1-5/0,10 * *',
+      '0 9 1-5/xyz,10 * *',
+    ]) {
+      const result = validateCronExpression(expr);
+      expect(result.valid, `${expr}: ${result.error}`).toBe(false);
+      expect(result.error).toMatch(/step/i);
+    }
+  });
+
+  it('still accepts valid step suffixes in every form (boundary)', () => {
+    expect(validateCronExpression('5-10/2 * * * *').valid).toBe(true);
+    expect(validateCronExpression('5/15 * * * *').valid).toBe(true);
+    expect(validateCronExpression('0 9 1-5/2,10 * *').valid).toBe(true);
   });
 
   it('returns error for empty string', () => {
@@ -621,8 +830,23 @@ describe('CRON_PRESETS', () => {
     expect(CRON_PRESETS.firstOfMonth).toBe('0 9 1 * *');
   });
 
-  it('lastDayOfMonth uses range 28-31', () => {
-    expect(CRON_PRESETS.lastDayOfMonth).toContain('28-31');
+  it('lastDayOfMonth uses the L token (last day of month)', () => {
+    expect(CRON_PRESETS.lastDayOfMonth).toBe('0 9 L * *');
+  });
+
+  it('lastDayOfMonth fires only on the actual last day of each month', () => {
+    // January (31 days): must not fire on the 28th/29th/30th
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-01-28T09:00:00'))).toBe(false);
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-01-29T09:00:00'))).toBe(false);
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-01-30T09:00:00'))).toBe(false);
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-01-31T09:00:00'))).toBe(true);
+    // April (30 days): must not fire on the 28th/29th
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-04-28T09:00:00'))).toBe(false);
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-04-29T09:00:00'))).toBe(false);
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-04-30T09:00:00'))).toBe(true);
+    // Non-leap February (28 days): only the 28th
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-02-27T09:00:00'))).toBe(false);
+    expect(matchesCron(CRON_PRESETS.lastDayOfMonth, new Date('2026-02-28T09:00:00'))).toBe(true);
   });
 
   it('everyMinute matches any time', () => {

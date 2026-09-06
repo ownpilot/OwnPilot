@@ -52,11 +52,22 @@ describe('extractMemoriesFromResponse', () => {
     expect(result.memories).toEqual([]);
   });
 
-  it('returns content as-is when regex matches but JSON.parse throws (line 89)', () => {
-    // Regex matches [...]  but content is invalid JSON → catch block
+  it('strips the tag from content when regex matches but JSON.parse throws (line 89)', () => {
+    // Round 34 regression: the tag WAS recognized, so content comes back
+    // stripped even when the payload is unparseable — returning raw leaked
+    // the <memories> markup into the displayed chat.
     const raw = 'Response.\n<memories>[invalid json here]</memories>';
     const result = extractMemoriesFromResponse(raw);
-    expect(result.content).toBe(raw);
+    expect(result.content).toBe('Response.');
+    expect(result.memories).toEqual([]);
+  });
+
+  it('strips the tag when ALL items have invalid types (round 34 regression)', () => {
+    // An easy LLM slip (a type outside the five valid ones) must not leak
+    // the raw markup into the displayed chat.
+    const raw = 'Response.\n<memories>[{"type":"note","content":"x"}]</memories>';
+    const result = extractMemoriesFromResponse(raw);
+    expect(result.content).toBe('Response.');
     expect(result.memories).toEqual([]);
   });
 
@@ -103,9 +114,11 @@ describe('extractMemoriesFromResponse', () => {
   });
 
   it('returns empty memories for empty array', () => {
+    // Round 34: the tag was recognized, so content comes back stripped —
+    // an empty payload must not leak the raw tag into displayed content.
     const raw = 'Response.\n<memories>[]</memories>';
     const result = extractMemoriesFromResponse(raw);
-    expect(result.content).toBe(raw);
+    expect(result.content).toBe('Response.');
     expect(result.memories).toEqual([]);
   });
 

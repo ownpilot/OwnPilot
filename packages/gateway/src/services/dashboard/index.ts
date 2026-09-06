@@ -106,7 +106,13 @@ export class DashboardService {
     const customDataService = getDatabaseService();
     const planService = getPlanService();
 
-    const today = new Date().toISOString().split('T')[0] ?? '';
+    // LOCAL-day basis — task dueDate values are user-local 'YYYY-MM-DD'
+    // strings (round 18: the UTC-derived date misfiled yesterday-local tasks
+    // as dueToday and dropped today-local tasks after local midnight).
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+      now.getDate()
+    ).padStart(2, '0')}`;
 
     // Each section is wrapped so a single data source failure doesn't crash the entire briefing
 
@@ -116,7 +122,10 @@ export class DashboardService {
     let overdueTasks: Task[] = [];
     let taskTotal = 0;
     try {
-      const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().split('T')[0] ?? '';
+      const yesterdayDate = new Date(now.getTime() - MS_PER_DAY);
+      const yesterday = `${yesterdayDate.getFullYear()}-${String(
+        yesterdayDate.getMonth() + 1
+      ).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
       [pendingTasks, dueTodayTasks, overdueTasks] = await Promise.all([
         tasksRepo.list({ status: ['pending', 'in_progress'], limit: 50 }),
         tasksRepo.list({
@@ -171,10 +180,16 @@ export class DashboardService {
       log.error('[DashboardService] Failed to load triggers:', err);
     }
     const enabledTriggers = allTriggers.filter((t) => t.enabled);
+    // "Scheduled today" = nextFire falls within the LOCAL day window (instant
+    // comparison). Comparing nextFire's UTC day-string against the local-day
+    // `today` (a leftover from before `today` was localized in round 18)
+    // misclassified every trigger in the first |offset| hours of the local day.
+    const triggerDayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const triggerDayEnd = new Date(triggerDayStart.getTime() + MS_PER_DAY);
     const scheduledToday = enabledTriggers.filter((t) => {
       if (!t.nextFire) return false;
-      const fireDate = new Date(t.nextFire).toISOString().split('T')[0];
-      return fireDate === today;
+      const fireTime = new Date(t.nextFire).getTime();
+      return fireTime >= triggerDayStart.getTime() && fireTime < triggerDayEnd.getTime();
     });
 
     // Memories
@@ -337,7 +352,12 @@ export class DashboardService {
   }
 
   private calculateGoalStats(goals: Goal[]) {
-    const today = new Date().toISOString().split('T')[0] ?? '';
+    // "Today" on the LOCAL day basis — goal dueDate strings are user-local
+    // 'YYYY-MM-DD' values and goals become overdue at local midnight. A
+    // UTC-derived date misses boundary-day goals for the first |UTC offset|
+    // hours of the local day in UTC+ timezones (and over-counts in UTC−).
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const overdueCount = goals.filter((g) => g.dueDate && g.dueDate < today).length;
     const totalProgress = goals.reduce((sum, g) => sum + (g.progress ?? 0), 0);
     const averageProgress = goals.length > 0 ? totalProgress / goals.length : 0;

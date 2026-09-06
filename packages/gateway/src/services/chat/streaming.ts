@@ -769,13 +769,12 @@ export async function processStreamingViaBus(
     }
   }
 
-  await recordStreamUsage(state, {
-    userId,
-    conversationId,
-    provider,
-    model,
-    error: result.response.metadata.error as string | undefined,
-  });
+  // Usage recording: the audit middleware's exit phase already records this
+  // request — ctx 'usage'/'agentResult' are set by the agent-execution stage
+  // from the same agent.chat() result. Calling recordStreamUsage here as well
+  // double-counted every bus-path chat's tokens/cost into budgets and /costs
+  // (round 33). Non-bus callers (the direct route path) still use
+  // recordStreamUsage directly.
 
   // Save both messages AND logs here. The persistence middleware is unreliable
   // when resetContext changes the agent's conversationId mid-stream (race condition).

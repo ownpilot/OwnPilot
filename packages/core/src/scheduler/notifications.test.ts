@@ -62,6 +62,53 @@ function makeConfig(overrides: Partial<TaskNotificationConfig> = {}): TaskNotifi
   };
 }
 
+// =============================================================================
+// Reminder failure containment (round 31 regression)
+// =============================================================================
+
+describe('SchedulerNotificationBridge reminder failure containment', () => {
+  it('contains a rejecting handler at reminder-fire time — no unhandled rejection', async () => {
+    // The setTimeout callback in scheduleReminder is fire-and-forget: a
+    // rejecting handler must be caught+logged there, or it surfaces as an
+    // unhandled promise rejection (Node's default handler terminates the
+    // process — a transient channel failure at reminder-fire time would
+    // crash the gateway).
+    const onUnhandled = vi.fn();
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      const handler: SchedulerNotificationHandler = async () => {
+        throw new Error('channel down');
+      };
+      const bridge = createSchedulerNotificationBridge(handler);
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({ triggers: ['reminder'], reminderMinutes: 1 })
+      );
+      // nextRun ~60s out with a 1-minute reminder → the timer fires in ~40ms
+      bridge.scheduleReminder(makeTask(), new Date(Date.now() + 60_000 + 40));
+
+      await new Promise((r) => setTimeout(r, 250));
+      expect(onUnhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
+  it('still delivers the reminder when the handler resolves (boundary)', async () => {
+    const handler = vi.fn(async () => undefined);
+    const bridge = createSchedulerNotificationBridge(handler);
+    bridge.setTaskNotificationConfig(
+      'task-1',
+      makeConfig({ triggers: ['reminder'], reminderMinutes: 1 })
+    );
+    bridge.scheduleReminder(makeTask(), new Date(Date.now() + 60_000 + 40));
+
+    await new Promise((r) => setTimeout(r, 250));
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0]![0].type).toBe('reminder');
+  });
+});
+
 function makeStats(overrides: Partial<TaskExecutionStats> = {}): TaskExecutionStats {
   return {
     total: 10,

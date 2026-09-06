@@ -455,6 +455,54 @@ describe('GoalsRepository', () => {
       expect(sql).toContain('due_date');
       expect(sql).toContain("status = 'active'");
     });
+
+    it('emits local-day string bounds with an explicit lower bound (round 25 regression)', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+
+      await repo.getUpcoming(7);
+
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
+      expect(sql, 'a lower bound keeps overdue goals out of "upcoming"').toContain('due_date >=');
+      const bounds = [...sql.matchAll(/due_date\s*(<=|>=)\s*\$(\d+)/g)].map((m) =>
+        String(params[Number(m[2]) - 1])
+      );
+      expect(bounds).toHaveLength(2);
+      for (const bound of bounds) {
+        expect(bound, 'bounds are bare LOCAL-day YYYY-MM-DD strings, not UTC instants').toMatch(
+          /^\d{4}-\d{2}-\d{2}$/
+        );
+      }
+    });
+
+    it('excludes overdue goals from the window (round 25 regression)', async () => {
+      const t = new Date();
+      const dayStr = (offsetDays: number): string => {
+        const d = new Date(t.getFullYear(), t.getMonth(), t.getDate() + offsetDays);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      };
+      const seeded = [
+        goalRow({ id: 'g-overdue', due_date: dayStr(-30) }),
+        goalRow({ id: 'g-today', due_date: dayStr(0) }),
+        goalRow({ id: 'g-in7', due_date: dayStr(7) }),
+        goalRow({ id: 'g-in20', due_date: dayStr(20) }),
+      ];
+      // Apply the emitted SQL's due_date predicate — the production filter.
+      mockAdapter.query.mockImplementation(async (sql: string, params: unknown[]) => {
+        const conds = [...sql.matchAll(/due_date\s*(<=|>=)\s*\$(\d+)/g)];
+        return seeded.filter((row) =>
+          conds.every((m) => {
+            const op = m[1]!;
+            const bound = String(params[Number(m[2]) - 1]);
+            return op === '<=' ? row.due_date <= bound : row.due_date >= bound;
+          })
+        );
+      });
+
+      const ids = (await repo.getUpcoming(7)).map((g) => g.id).sort();
+
+      expect(ids).toEqual(['g-in7', 'g-today']);
+    });
   });
 
   // ==========================================================================

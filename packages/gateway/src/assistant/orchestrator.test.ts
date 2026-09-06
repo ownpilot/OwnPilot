@@ -1524,4 +1524,43 @@ describe('updateGoalProgress', () => {
     expect(mockGoalService.completeStep).toHaveBeenCalledTimes(1);
     expect(mockGoalService.completeStep).toHaveBeenCalledWith(USER_ID, stepA.id);
   });
+
+  // Round 36 regression: the old matcher required only "title anywhere in the
+  // response" + "a completion keyword anywhere in the response", so negations
+  // and cross-sentence coincidences completed steps the user did not do.
+
+  it('does NOT complete on negated completion (round 36 regression)', async () => {
+    const goal = { id: 'g-1', title: 'Study' };
+    const step = makeStep('Chapter 3', 'pending');
+    mockGoalService.getActive.mockResolvedValue([goal]);
+    mockGoalService.getSteps.mockResolvedValue([step]);
+    await updateGoalProgress(
+      USER_ID,
+      'msg',
+      "I haven't finished Chapter 3 yet — I'll do it tomorrow."
+    );
+    expect(mockGoalService.completeStep).not.toHaveBeenCalled();
+  });
+
+  it('does NOT complete on "not done" phrasing (round 36 regression)', async () => {
+    const goal = { id: 'g-1', title: 'Study' };
+    const step = makeStep('Chapter 3', 'pending');
+    mockGoalService.getActive.mockResolvedValue([goal]);
+    mockGoalService.getSteps.mockResolvedValue([step]);
+    await updateGoalProgress(USER_ID, 'msg', 'Still not done with Chapter 3.');
+    expect(mockGoalService.completeStep).not.toHaveBeenCalled();
+  });
+
+  it('does NOT complete when the completion keyword is in a different sentence (round 36 regression)', async () => {
+    const goal = { id: 'g-1', title: 'Study' };
+    const step = makeStep('Chapter 3', 'pending');
+    mockGoalService.getActive.mockResolvedValue([goal]);
+    mockGoalService.getSteps.mockResolvedValue([step]);
+    await updateGoalProgress(
+      USER_ID,
+      'msg',
+      'Chapter 3 looks challenging. By the way, dinner is done.'
+    );
+    expect(mockGoalService.completeStep).not.toHaveBeenCalled();
+  });
 });

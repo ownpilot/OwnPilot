@@ -336,5 +336,22 @@ describe('UCPBridgeManager', () => {
         expect(isSafeRegexPattern(p)).toBe(false);
       }
     });
+
+    it('rejects quantified overlapping-alternation ReDoS (the other evil-regex signature)', () => {
+      // Regression: the guard only detected nested unbounded quantifiers
+      // ((a+)+). These forms backtrack exponentially with NO nested quantifier —
+      // an unbounded-quantified group whose branches share a leading literal or
+      // lead with a wildcard/class — and were previously accepted while
+      // bridgeMessage compiled and ran them synchronously on inbound text.
+      for (const p of ['(a|aa)+', '(a|aa)+$', '(ab|a)+', '(a|.)+', '(.|a)+', '(\\w|aa)+']) {
+        expect(isSafeRegexPattern(p), p).toBe(false);
+      }
+    });
+
+    it('still accepts distinct-literal alternation filters (boundary)', () => {
+      for (const p of ['(foo|bar)+', '^(urgent|asap)', '(a|b)+', '(a+)x']) {
+        expect(isSafeRegexPattern(p), p).toBe(true);
+      }
+    });
   });
 });

@@ -541,6 +541,31 @@ describe('PomodoroRepository', () => {
   // =========================================================================
 
   describe('getDailyStats', () => {
+    it('defaults to the LOCAL day (round 29 regression)', async () => {
+      vi.useFakeTimers();
+      try {
+        // Local Sep 6 01:00 — on UTC+ hosts the UTC clock still reads Sep 5
+        // (the discriminator); on UTC hosts this holds as a boundary.
+        vi.setSystemTime(new Date(2026, 8, 6, 1, 0, 0));
+        // Apply the emitted WHERE predicate: only the local-day row exists.
+        mockAdapter.queryOne.mockImplementation(async (sql: string, params: unknown[]) => {
+          if (/FROM pomodoro_daily_stats/.test(sql)) {
+            return params[1] === '2026-09-06' ? makeDailyStatsRow({ date: '2026-09-06' }) : null;
+          }
+          return null;
+        });
+
+        const stats = await repo.getDailyStats();
+
+        expect(
+          stats,
+          'the no-arg default must read the LOCAL day\u2019s stats row — a UTC default reset the user\u2019s count at 03:00 local instead of midnight'
+        ).not.toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('should return stats for specific date', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeDailyStatsRow());
 
@@ -670,6 +695,46 @@ describe('PomodoroRepository', () => {
       const streak = await repo.getStreak();
 
       expect(streak).toBe(0);
+    });
+
+    it('counts a streak whose latest completed day is YESTERDAY (grace: today not yet missed)', async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      const fmt = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+      // Regression (round 22): the walk always anchored expectedDate at
+      // TODAY, so statDate(yesterday) !== expectedDate(today) on the first
+      // iteration and the streak broke to 0 — contradicting the adjacent
+      // "Allow for today or yesterday to count as start" comment.
+      mockAdapter.query.mockResolvedValueOnce([
+        makeDailyStatsRow({ date: fmt(yesterday), completed_sessions: 2 }),
+      ]);
+
+      expect(await repo.getStreak()).toBe(1);
+    });
+
+    it('counts a multi-day streak ending YESTERDAY at full length', async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const mk = (offset: number) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() - offset);
+        return d;
+      };
+      const fmt = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+      mockAdapter.query.mockResolvedValueOnce([
+        makeDailyStatsRow({ date: fmt(mk(1)), completed_sessions: 2 }),
+        makeDailyStatsRow({ date: fmt(mk(2)), completed_sessions: 1 }),
+        makeDailyStatsRow({ date: fmt(mk(3)), completed_sessions: 4 }),
+      ]);
+
+      expect(await repo.getStreak()).toBe(3);
     });
 
     it('should query for completed_sessions > 0 ordered by date DESC', async () => {

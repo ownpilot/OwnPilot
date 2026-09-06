@@ -354,6 +354,12 @@ export class GoalsRepository extends BaseRepository {
    * Get goals with upcoming due dates
    */
   async getUpcoming(days = 7): Promise<Goal[]> {
+    // LOCAL-day bounds on the stored due_date basis, WITH an explicit lower
+    // bound. `due_date <= now+days` alone returned already-overdue goals as
+    // "upcoming" forever (the upcoming_deadline trigger could never go
+    // quiet; the autonomy gatherGoals sibling requires strictly-future
+    // dues), and the UTC toISOString() instant bound shaved the window's
+    // last day in UTC+ timezones (rounds 15-18 day-basis family).
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);
 
@@ -362,9 +368,10 @@ export class GoalsRepository extends BaseRepository {
        WHERE user_id = $1
          AND status = 'active'
          AND due_date IS NOT NULL
-         AND due_date <= $2
+         AND due_date >= $2
+         AND due_date <= $3
        ORDER BY due_date ASC`,
-      [this.userId, futureDate.toISOString()]
+      [this.userId, this.localDayString(new Date()), this.localDayString(futureDate)]
     );
 
     return rows.map((row) => this.mapGoal(row));
@@ -614,6 +621,13 @@ export class GoalsRepository extends BaseRepository {
   // ==========================================================================
   // Helpers
   // ==========================================================================
+
+  /** Local-day 'YYYY-MM-DD' string — the write basis of due_date values. */
+  private localDayString(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+      date.getDate()
+    ).padStart(2, '0')}`;
+  }
 
   private mapGoal(row: GoalRow): Goal {
     return {

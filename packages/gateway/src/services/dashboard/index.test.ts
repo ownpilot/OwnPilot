@@ -541,6 +541,36 @@ describe('Dashboard Service', () => {
       expect(stats.overdueCount).toBe(1);
     });
 
+    it('uses the LOCAL day basis for boundary-day overdue goals', () => {
+      // Regression: "today" was derived from the UTC date while goal dueDate
+      // strings are user-local days — on UTC+ hosts a goal due "yesterday"
+      // was not counted overdue until UTC midnight. Local-component Date
+      // constructors keep the scenario timezone-agnostic; the discriminator
+      // only engages on non-UTC hosts (vacuously green on UTC).
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date(2026, 8, 6, 1, 30, 0)); // local 09-06 01:30
+        const boundaryGoals = [
+          { progress: 10, dueDate: '2026-09-05' }, // yesterday local → overdue
+          { progress: 20, dueDate: '2026-09-06' }, // today local → not overdue
+        ] as unknown as Goal[];
+
+        const boundaryStats = (service as unknown as PrivateDashboardService).calculateGoalStats(
+          boundaryGoals
+        );
+        expect(boundaryStats.overdueCount).toBe(1);
+
+        // Before local midnight the boundary-day goal must NOT be overdue.
+        vi.setSystemTime(new Date(2026, 8, 5, 13, 0, 0)); // local 09-05 13:00
+        const sameDayStats = (service as unknown as PrivateDashboardService).calculateGoalStats([
+          { progress: 10, dueDate: '2026-09-05' },
+        ] as unknown as Goal[]);
+        expect(sameDayStats.overdueCount).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('handles empty goals', () => {
       const stats = (service as unknown as PrivateDashboardService).calculateGoalStats([]);
 
@@ -954,10 +984,14 @@ describe('Dashboard Service', () => {
     });
 
     it('filters triggers scheduled for today', async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const triggerToday = { id: 't1', enabled: true, nextFire: `${today}T10:00:00Z` };
+      // Local NOON today — always inside the local day window regardless of
+      // host timezone or the hour the suite runs (the old UTC-day fixture
+      // failed in the first |offset| hours of the local day).
+      const localNoonToday = new Date();
+      localNoonToday.setHours(12, 0, 0, 0);
+      const triggerToday = { id: 't1', enabled: true, nextFire: localNoonToday.toISOString() };
       const triggerTomorrow = { id: 't2', enabled: true, nextFire: '2099-12-31T10:00:00Z' };
-      const triggerDisabled = { id: 't3', enabled: false, nextFire: `${today}T10:00:00Z` };
+      const triggerDisabled = { id: 't3', enabled: false, nextFire: localNoonToday.toISOString() };
       const triggerNoFire = { id: 't4', enabled: true, nextFire: null };
 
       mockTasksList.mockResolvedValue([]);

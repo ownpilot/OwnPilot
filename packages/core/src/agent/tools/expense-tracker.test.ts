@@ -93,6 +93,92 @@ function setupFs(db?: ExpenseDatabase): void {
   mockMkdir.mockResolvedValue(undefined);
 }
 
+// ==========================================================================
+// Calendar-day basis (round 27)
+// ==========================================================================
+
+describe('expense calendar-day basis (round 27)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // Local 2026-10-01 00:30 — on UTC+ hosts the UTC clock still reads
+    // 2026-09-30 (the discriminator); on UTC hosts these hold as boundaries.
+    vi.setSystemTime(new Date(2026, 9, 1, 0, 30, 0));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('add_expense with no date stamps the LOCAL day', async () => {
+    setupFs();
+    const result = await addExpenseExecutor(
+      { amount: 10, category: 'food', description: 'late snack' },
+      dummyContext
+    );
+    const data = parseContent(result.content);
+    expect(
+      data.expense.date,
+      'an expense added at local 00:30 must be dated the LOCAL today — the UTC day files it under yesterday and yesterday’s totals'
+    ).toBe('2026-10-01');
+  });
+
+  it("this_month covers today's local-calendar expenses (window not inverted)", async () => {
+    const db: ExpenseDatabase = {
+      version: '1.0',
+      lastUpdated: '',
+      expenses: [
+        {
+          id: 'exp_basis_1',
+          date: '2026-10-01',
+          amount: 10,
+          currency: 'TRY',
+          category: 'food',
+          description: 'late snack',
+          source: 'manual',
+          createdAt: '2026-10-01T00:30:00.000Z',
+        },
+      ],
+      categories: {},
+    };
+    setupFs(db);
+
+    const result = await expenseSummaryExecutor({ period: 'this_month' }, dummyContext);
+    const data = parseContent(result.content);
+    expect(
+      data.period.startDate <= data.period.endDate,
+      `this_month window must not be inverted — got [${data.period.startDate}, ${data.period.endDate}] (local month start vs UTC end day)`
+    ).toBe(true);
+    expect(data.summary.totalExpenses).toBe(1);
+  });
+
+  it("period 'today' covers the local day", async () => {
+    const db: ExpenseDatabase = {
+      version: '1.0',
+      lastUpdated: '',
+      expenses: [
+        {
+          id: 'exp_basis_2',
+          date: '2026-10-01',
+          amount: 10,
+          currency: 'TRY',
+          category: 'food',
+          description: 'late snack',
+          source: 'manual',
+          createdAt: '2026-10-01T00:30:00.000Z',
+        },
+      ],
+      categories: {},
+    };
+    setupFs(db);
+
+    const result = await expenseSummaryExecutor({ period: 'today' }, dummyContext);
+    const data = parseContent(result.content);
+    expect(
+      data.summary.totalExpenses,
+      `today's expense must appear in period 'today' — got window [${data.period.startDate}, ${data.period.endDate}]`
+    ).toBe(1);
+  });
+});
+
 // =============================================================================
 // addExpenseTool / addExpenseExecutor
 // =============================================================================

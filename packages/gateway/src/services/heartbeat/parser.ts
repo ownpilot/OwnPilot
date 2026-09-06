@@ -76,20 +76,29 @@ function extractTime(
   if (timeMatch) {
     const hour = parseInt(timeMatch[1]!, 10);
     const minute = parseInt(timeMatch[2]!, 10);
-    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-      const rest = text.slice(0, timeMatch.index!).trim();
-      return { hour, minute, rest };
+    if (hour > 23 || minute > 59) {
+      // A time-shaped token that fails range checks is a user input error —
+      // reject it instead of silently falling back to the default time
+      // (otherwise "Every Day 25:00" quietly installs a 09:00 schedule).
+      throw new HeartbeatParseError(
+        `Invalid time "${timeMatch[1]}:${timeMatch[2]}" — hour must be 0-23, minute 0-59`
+      );
     }
+    const rest = text.slice(0, timeMatch.index!).trim();
+    return { hour, minute, rest };
   }
 
-  // Match bare hour like "at 8" or "8:00" already handled above
+  // Match bare hour like "at 8" ("8:00" already handled above)
   const bareHourMatch = text.match(/\bat\s+(\d{1,2})\s*$/i);
   if (bareHourMatch) {
     const hour = parseInt(bareHourMatch[1]!, 10);
-    if (hour >= 0 && hour <= 23) {
-      const rest = text.slice(0, bareHourMatch.index!).trim();
-      return { hour, minute: 0, rest };
+    if (hour > 23) {
+      throw new HeartbeatParseError(
+        `Invalid hour "${bareHourMatch[1]}" — must be between 0 and 23`
+      );
     }
+    const rest = text.slice(0, bareHourMatch.index!).trim();
+    return { hour, minute: 0, rest };
   }
 
   return { hour: defaultHour, minute: defaultMinute, rest: text };

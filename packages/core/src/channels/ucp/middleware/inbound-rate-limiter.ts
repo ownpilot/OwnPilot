@@ -83,11 +83,18 @@ export function inboundRateLimiter(config: InboundRateLimiterConfig = {}): UCPMi
     let entry = windows.get(key);
     if (!entry) {
       entry = { timestamps: [] };
-      windows.set(key, entry);
-      if (windows.size > maxTrackedSenders) {
-        const oldest = windows.keys().next().value;
-        if (oldest !== undefined && oldest !== key) windows.delete(oldest);
-      }
+    } else {
+      // True LRU: re-insert the key so its Map position reflects this use —
+      // Map.set on an existing key preserves the ORIGINAL insertion position,
+      // so without this the cap eviction below removed the FIRST-SEEN sender
+      // (even one actively messaging), wiping their window and resetting
+      // their quota inside the same window (round 20).
+      windows.delete(key);
+    }
+    windows.set(key, entry);
+    if (windows.size > maxTrackedSenders) {
+      const oldest = windows.keys().next().value;
+      if (oldest !== undefined && oldest !== key) windows.delete(oldest);
     }
 
     entry.timestamps = entry.timestamps.filter((t) => now - t < windowMs);

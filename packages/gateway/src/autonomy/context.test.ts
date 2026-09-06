@@ -359,6 +359,33 @@ describe('gatherPulseContext', () => {
       expect(ctx.tasks.overdue[0].title).toBe('Overdue Task');
     });
 
+    it('queries dueToday/overdue bounds on the LOCAL day basis', async () => {
+      // Round-17 regression: the bounds were UTC-derived while task dueDate
+      // values are user-local days — after local midnight in UTC+ zones the
+      // dueToday query misfiled yesterday-local tasks and DROPPED today-local
+      // ones. Local-component constructors keep this timezone-agnostic; the
+      // discriminator engages only where local ≠ UTC (vacuously green on UTC).
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date(2026, 8, 6, 1, 0, 0)); // local 09-06 01:00
+        mockTasksRepo.list.mockResolvedValue([]);
+
+        await gatherPulseContext('user-1');
+
+        const calls = mockTasksRepo.list.mock.calls as unknown as Array<
+          [{ dueAfter?: string; dueBefore?: string }]
+        >;
+        const dueToday = calls.find((c) => c[0]?.dueAfter !== undefined);
+        const overdue = calls.find(
+          (c) => c[0]?.dueAfter === undefined && c[0]?.dueBefore !== undefined
+        );
+        expect(dueToday?.[0]).toMatchObject({ dueAfter: '2026-09-06', dueBefore: '2026-09-06' });
+        expect(overdue?.[0]?.dueBefore).toBe('2026-09-05');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('should handle tasks errors', async () => {
       mockTasksRepo.list.mockRejectedValue(new Error('DB error'));
 

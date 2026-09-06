@@ -101,7 +101,11 @@ export abstract class BaseRepository {
    * Use this when building LIKE patterns from user input.
    */
   protected escapeLike(value: string): string {
-    return value.replace(/%/g, '\\%').replace(/_/g, '\\_');
+    // Backslash MUST be escaped first — it is LIKE's escape character. A
+    // literal backslash left unescaped corrupts the rest of the pattern: the
+    // escape added to a following %/_ gets consumed (re-enabling the
+    // wildcard) and \b collapses to a literal 'b' match (round 26).
+    return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   }
 
   /**

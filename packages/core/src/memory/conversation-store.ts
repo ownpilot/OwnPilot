@@ -171,9 +171,13 @@ export class ConversationMemoryStore {
     const memory = this.memories.get(id);
     if (!memory) return null;
 
-    // Update access stats
+    // Update access stats. Write through like every other mutating method:
+    // retention (auto-archive via lastAccessed) and relevance scoring
+    // (accessCount bonus, max-memories pruning) consume these as durable
+    // state — leaving them unsaved silently reverts them on restart.
     memory.accessCount++;
     memory.lastAccessed = new Date().toISOString();
+    await this.saveMemories();
 
     return memory;
   }

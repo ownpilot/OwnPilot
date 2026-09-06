@@ -115,10 +115,14 @@ export class EventBus implements IEventBus {
   }
 
   once<K extends EventType>(type: K, handler: EventHandler<EventPayload<K>>): Unsubscribe {
-    const wrappedHandler: EventHandler = (event) => {
+    const wrappedHandler: EventHandler & { original?: EventHandler } = (event) => {
       unsub();
       return (handler as EventHandler)(event);
     };
+    // Tag the wrapper with the original handler so off(type, originalHandler)
+    // can find and remove it — off() must cancel either subscription form
+    // (Node.js EventEmitter precedent for removing once() listeners).
+    wrappedHandler.original = handler as EventHandler;
     const unsub = this.addHandler(type, wrappedHandler);
     return unsub;
   }
@@ -129,10 +133,17 @@ export class EventBus implements IEventBus {
 
   off(type: string, handler: EventHandler): void {
     const set = this.handlers.get(type);
-    if (set) {
-      set.delete(handler);
-      if (set.size === 0) this.handlers.delete(type);
+    if (!set) return;
+    // Match direct handlers AND once() wrappers registered for the same
+    // original handler — off() must cancel either subscription form.
+    // (Deleting during Set iteration is safe in JS — unvisited removals are
+    // simply skipped.)
+    for (const h of set) {
+      if (h === handler || (h as { original?: unknown }).original === handler) {
+        set.delete(h);
+      }
     }
+    if (set.size === 0) this.handlers.delete(type);
   }
 
   onCategory(category: EventCategory, handler: EventHandler): Unsubscribe {

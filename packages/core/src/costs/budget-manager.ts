@@ -182,8 +182,16 @@ export class BudgetManager extends EventEmitter {
     for (const alert of status.alerts) {
       const alertKey = `${alert.type}_${alert.threshold}`;
 
-      // Only emit each alert once per day
-      const today = new Date().toISOString().split('T')[0];
+      // Only emit each alert once per day — on the LOCAL day, the same basis
+      // the usage windows use (getTodayUsage/getWeekUsage/getMonthUsage all
+      // start at local midnight). A UTC-date key suppressed the new local
+      // day's alerts for the first |UTC offset| hours after local midnight
+      // in UTC+ timezones (and dropped them entirely when no further usage
+      // occurred before UTC midnight).
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+        now.getDate()
+      ).padStart(2, '0')}`;
       const fullKey = `${alertKey}_${today}`;
 
       if (!this.alertsSent.has(fullKey)) {

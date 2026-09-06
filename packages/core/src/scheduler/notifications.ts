@@ -12,7 +12,10 @@
  * - Notification preferences per user
  */
 
+import { getLog } from '../services/get-log.js';
 import type { ScheduledTask, TaskExecutionResult, TaskStatus, TaskPriority } from './index.js';
+
+const log = getLog('SchedulerNotifications');
 
 // Notification types (inlined — the full notifications module was removed as dead code)
 export type NotificationChannel = 'telegram' | 'email' | 'webhook' | 'push' | 'sms';
@@ -306,7 +309,7 @@ export class SchedulerNotificationBridge {
     }
 
     const delay = reminderTime.getTime() - now.getTime();
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       const event: TaskNotificationEvent = {
         type: 'reminder',
         task,
@@ -314,9 +317,19 @@ export class SchedulerNotificationBridge {
       };
 
       const notification = this.buildNotification(event, config, task.userId);
-      await this.notificationHandler(event, notification);
-
       this.reminderTimers.delete(task.id);
+
+      // Fire-and-forget context: nothing awaits this callback's promise, so
+      // a rejecting handler here would surface as an UNHANDLED promise
+      // rejection — Node's default handler terminates the process. A
+      // transient notification failure (channel down at reminder-fire time)
+      // must be contained and logged, not fatal (round 31).
+      this.notificationHandler(event, notification).catch((error) => {
+        log.warn('Reminder notification failed', {
+          taskId: task.id,
+          error: String(error),
+        });
+      });
     }, delay);
 
     this.reminderTimers.set(task.id, timer);

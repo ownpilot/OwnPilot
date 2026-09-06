@@ -319,12 +319,22 @@ export class PomodoroRepository extends BaseRepository {
   // Daily Stats
   // ---------------------------------------------------------------------------
 
+  /** Local-day 'YYYY-MM-DD' — daily stats are the USER's calendar day, so
+   * the count must reset at local midnight. The previous UTC-day basis
+   * attributed post-midnight sessions to the PREVIOUS day's row and reset
+   * "today" at 03:00 local in UTC+3 (round 29). */
+  private localDayString(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+      date.getDate()
+    ).padStart(2, '0')}`;
+  }
+
   private async updateDailyStats(
     sessionType: SessionType,
     minutes: number,
     isInterruption: boolean
   ): Promise<void> {
-    const today: string = new Date().toISOString().split('T')[0]!;
+    const today: string = this.localDayString(new Date());
     const id = `pds_${this.userId}_${today}`;
 
     // Try to get existing stats
@@ -373,7 +383,7 @@ export class PomodoroRepository extends BaseRepository {
   }
 
   async getDailyStats(date?: string): Promise<PomodoroDailyStats | null> {
-    const targetDate: string = date ?? new Date().toISOString().split('T')[0]!;
+    const targetDate: string = date ?? this.localDayString(new Date());
 
     const row = await this.queryOne<DailyStatsRow>(
       `SELECT * FROM pomodoro_daily_stats WHERE user_id = $1 AND date = $2`,
@@ -411,13 +421,22 @@ export class PomodoroRepository extends BaseRepository {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // "Allow for today or yesterday to count as start": anchor the walk at
+    // the most recent completed day. When that day is YESTERDAY the streak is
+    // not broken — today hasn't been missed until it ends — so the walk must
+    // start at yesterday. Anchoring at today made the first comparison always
+    // fail and reset yesterday-anchored streaks to 0 (round 22).
+    const firstStatDate = new Date(stats[0]!.date);
+    firstStatDate.setHours(0, 0, 0, 0);
+    const anchor = firstStatDate.getTime() < today.getTime() ? firstStatDate : today;
+
     for (let i = 0; i < stats.length; i++) {
       const stat = stats[i]!;
       const statDate = new Date(stat.date);
       statDate.setHours(0, 0, 0, 0);
 
-      const expectedDate = new Date(today);
-      expectedDate.setDate(today.getDate() - streak);
+      const expectedDate = new Date(anchor);
+      expectedDate.setDate(anchor.getDate() - streak);
 
       // Allow for today or yesterday to count as start
       if (i === 0) {

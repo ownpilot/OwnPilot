@@ -60,11 +60,19 @@ export function getModelPricing(provider: AIProvider, modelId: string): ModelPri
   const exact = pricingByExactKey.get(`${provider}:${modelId}`);
   if (exact) return exact;
 
-  // Partial match for versioned models (e.g. claude-3-5-sonnet-20241022)
-  const partial = MODEL_PRICING.find(
-    (p) => p.provider === provider && modelId.includes(p.modelId.split('-').slice(0, 3).join('-'))
+  // Partial match for versioned/suffixed model ids (e.g.
+  // claude-3-5-sonnet-20241022, gpt-4o-mini-2024-07-18). Match on the FULL
+  // table id and prefer the LONGEST match: slicing ids to 3 dash-segments
+  // collapsed sibling models into one prefix (claude-3-5-sonnet and
+  // claude-3-5-haiku both → "claude-3-5"; "gpt-4o" is contained in
+  // "gpt-4o-mini-*"), and first-table-entry-wins then billed the cheaper
+  // variant at its family head's price — up to 16.7x input / 30x output.
+  const candidates = MODEL_PRICING.filter(
+    (p) => p.provider === provider && modelId.includes(p.modelId)
   );
-  if (partial) return partial;
+  if (candidates.length > 0) {
+    return candidates.reduce((best, p) => (p.modelId.length > best.modelId.length ? p : best));
+  }
 
   // Synced provider data (models.dev) — exact/alias match for models the static
   // table never listed. Preferred over the weak provider-level fallback below

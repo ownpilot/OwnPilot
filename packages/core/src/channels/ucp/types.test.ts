@@ -110,9 +110,36 @@ describe('adaptContent', () => {
 
     const result = adaptContent(msg, cap);
     expect(result.content[0].type).toBe('text');
-    expect(result.content[0].text).toContain('**Product Name**');
+    // Round 23 regression: cardToText used to declare the block 'plain'
+    // while wrapping the title in '**' markdown — adaptBlock's markdown
+    // strip never ran on a 'plain' block, so plain channels rendered
+    // literal asterisks ("**Product Name**").
+    expect(result.content[0].format).toBe('plain');
+    expect(result.content[0].text).toContain('Product Name');
+    expect(result.content[0].text).not.toContain('**');
     expect(result.content[0].text).toContain('A great product');
     expect(result.content[0].text).toContain('https://example.com');
+  });
+
+  it('degraded card keeps bold markdown on markdown-capable channels (round 23)', () => {
+    const msg = makeMessage({
+      content: [
+        {
+          type: 'card',
+          title: 'Product Name',
+          description: 'A great product',
+          url: 'https://example.com',
+        },
+      ],
+    });
+    const cap = makeCapabilities({ features: new Set(['markdown']) }); // no 'cards'
+
+    const result = adaptContent(msg, cap);
+    expect(result.content[0].type).toBe('text');
+    // The '**' must be declared markdown so the channel actually renders
+    // the title as bold (previously the block was declared 'plain').
+    expect(result.content[0].format).toBe('markdown');
+    expect(result.content[0].text).toContain('**Product Name**');
   });
 
   it('strips markdown when platform lacks markdown support', () => {

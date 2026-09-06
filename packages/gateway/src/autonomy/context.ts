@@ -229,12 +229,22 @@ async function gatherHabits(userId: string, ctx: PulseContext): Promise<void> {
   }
 }
 
+/** Local-day 'YYYY-MM-DD' string — the storage basis of task dueDates and
+ * calendar startTimes. Comparisons against those values MUST use this basis,
+ * never toISOString() (UTC): in UTC+ timezones the UTC date lags the local
+ * date for |offset| hours after local midnight. */
+function localDayString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+}
+
 async function gatherTasks(userId: string, now: Date, ctx: PulseContext): Promise<void> {
   try {
     const { TasksRepository } = await import('../db/repositories/index.js');
     const tasksRepo = new TasksRepository(userId);
-    const today = now.toISOString().split('T')[0] ?? '';
-    const yesterday = new Date(now.getTime() - MS_PER_DAY).toISOString().split('T')[0] ?? '';
+    const today = localDayString(now);
+    const yesterday = localDayString(new Date(now.getTime() - MS_PER_DAY));
 
     const [dueToday, overdue] = await Promise.all([
       tasksRepo.list({
@@ -263,7 +273,7 @@ async function gatherTasks(userId: string, now: Date, ctx: PulseContext): Promis
   }
 }
 
-async function gatherCalendar(userId: string, _now: Date, ctx: PulseContext): Promise<void> {
+async function gatherCalendar(userId: string, now: Date, ctx: PulseContext): Promise<void> {
   try {
     const { CalendarRepository } = await import('../db/repositories/index.js');
     const calendarRepo = new CalendarRepository(userId);
@@ -278,10 +288,10 @@ async function gatherCalendar(userId: string, _now: Date, ctx: PulseContext): Pr
       startTime: e.startTime ?? '',
     }));
 
-    // Filter upcoming to only tomorrow's events
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0] ?? '';
+    // Filter upcoming to only tomorrow's events — LOCAL tomorrow, on the same
+    // day basis as the stored startTimes (Date arithmetic handles rollover).
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const tomorrowStr = localDayString(tomorrow);
     ctx.calendar.tomorrowEvents = upcomingEvents
       .filter((e) => e.startTime && e.startTime.startsWith(tomorrowStr))
       .map((e) => ({

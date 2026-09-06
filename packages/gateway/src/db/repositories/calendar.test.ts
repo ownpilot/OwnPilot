@@ -479,6 +479,20 @@ describe('CalendarRepository', () => {
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
       expect(params).toContain('%50\\%\\_off%');
     });
+
+    it('escapes literal backslashes before % and _ (round 26 regression)', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.list({ search: 'a\\%b' });
+
+      // Input chars: a \ % b → the pattern must present LIKE with an ESCAPED
+      // backslash followed by an escaped percent. If the backslash itself is
+      // not escaped FIRST, LIKE consumes it and re-enables the % wildcard —
+      // a\%b searches then match a-anychar-b rows (row-level proof on the
+      // real DB, round 26).
+      const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
+      expect(params).toContain('%a\\\\\\%b%');
+    });
   });
 
   // =========================================================================

@@ -162,6 +162,36 @@ describe('getModelPricing', () => {
     expect(result!.modelId).toBe('claude-3-5-sonnet');
   });
 
+  it('prices versioned sibling models at their own rate, not the family head', () => {
+    // Regression: the old 3-segment-prefix partial match collapsed siblings
+    // (claude-3-5-haiku → "claude-3-5" → matched sonnet, listed first) and
+    // matched "gpt-4o" inside "gpt-4o-mini-*" — billing cheaper variants at
+    // head rates (up to 16.7x input / 30x output overcharge into
+    // calculateCost and budget enforcement).
+    expect(getModelPricing('anthropic', 'claude-3-5-haiku-20241022')?.modelId).toBe(
+      'claude-3-5-haiku'
+    );
+    expect(getModelPricing('openai', 'gpt-4o-mini-2024-07-18')?.modelId).toBe('gpt-4o-mini');
+    expect(getModelPricing('openai', 'gpt-4.1-nano-2025')?.modelId).toBe('gpt-4.1-nano');
+    expect(getModelPricing('openai', 'o3-mini-2025-04-16')?.modelId).toBe('o3-mini');
+    expect(getModelPricing('xai', 'grok-4-fast-non-commercial')?.modelId).toBe('grok-4-fast');
+  });
+
+  it('prefers the longest matching id when head and variant are both contained', () => {
+    // "gpt-4o-mini-2024-07-18" contains both "gpt-4o" and "gpt-4o-mini".
+    expect(getModelPricing('openai', 'gpt-4o-mini-2024-07-18')?.modelId).toBe('gpt-4o-mini');
+    // A versioned head keeps head pricing (no over-correction).
+    expect(getModelPricing('openai', 'gpt-4o-2024-08-13')?.modelId).toBe('gpt-4o');
+  });
+
+  it('calculateCost bills a versioned sibling at its own prices', () => {
+    // 1M input + 1M output ⇒ cost = inputPrice + outputPrice per million.
+    const mini = calculateCost('openai', 'gpt-4o-mini-2024-07-18', 1_000_000, 1_000_000);
+    expect(mini).toBeCloseTo(0.15 + 0.6, 10);
+    const haiku = calculateCost('anthropic', 'claude-3-5-haiku-20241022', 1_000_000, 1_000_000);
+    expect(haiku).toBeCloseTo(0.8 + 4.0, 10);
+  });
+
   it('falls back to provider first model for unknown model', () => {
     const result = getModelPricing('openai', 'unknown-future-model');
     expect(result).not.toBeNull();
@@ -1567,6 +1597,58 @@ describe('edge cases', () => {
     // Empty string won't match exact, won't match partial, falls back to provider
     expect(result).not.toBeNull();
     expect(result!.provider).toBe('openai');
+  });
+
+  describe('BudgetManager alert dedup day-basis', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('keys the once-per-day alert dedup on the LOCAL day, like the usage windows', async () => {
+      vi.useFakeTimers();
+      const tracker = new UsageTracker();
+      const budget = new BudgetManager(tracker, { dailyLimit: 1.0 });
+      const alerts: Array<{ type: string; threshold: number }> = [];
+      budget.on('alert', (a: { type: string; threshold: number }) => alerts.push(a));
+
+      // gpt-4.1-nano: $0.10/M in + $0.40/M out ⇒ 1M + 1M = $0.50 = exactly
+      // the 50% threshold of the $1 daily limit (thresholds 50/75/90/100).
+      const record = (big: boolean) =>
+        tracker.record({
+          userId: 'u1',
+          provider: 'openai',
+          model: 'gpt-4.1-nano',
+          inputTokens: big ? 1_000_000 : 100_000,
+          outputTokens: big ? 1_000_000 : 0,
+          latencyMs: 10,
+          requestType: 'chat',
+        });
+      const flush = () => vi.advanceTimersByTimeAsync(2);
+      const daily50 = () => alerts.filter((a) => a.type === 'daily' && a.threshold === 50).length;
+
+      // Local-component Date constructors keep the scenario timezone-agnostic.
+      // NOTE: the UTC-date-key regression this guards is only observable when
+      // local ≠ UTC in the post-local-midnight window — on UTC/UTC− hosts
+      // this test passes vacuously; on UTC+ hosts it fails against the bug.
+      vi.setSystemTime(new Date(2026, 8, 5, 14, 0, 0)); // local 09-05 14:00
+      await record(true);
+      await flush();
+      expect(daily50()).toBe(1);
+
+      await record(false);
+      await flush();
+      expect(daily50(), 'same local day dedups').toBe(1);
+
+      vi.setSystemTime(new Date(2026, 8, 6, 1, 0, 0)); // local 09-06 01:00 — new LOCAL day
+      await record(true); // fresh local-day window: 50% again
+      await flush();
+      expect(daily50(), 'new LOCAL day fires its own alert').toBe(2);
+
+      vi.setSystemTime(new Date(2026, 8, 6, 12, 0, 0)); // local 09-06 noon
+      await record(false);
+      await flush();
+      expect(daily50(), 'still exactly one alert per local day').toBe(2);
+    });
   });
 
   it('UsageTracker handles concurrent records', async () => {

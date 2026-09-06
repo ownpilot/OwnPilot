@@ -118,6 +118,30 @@ export class WorkerSandbox {
       const workerUrl = new URL('./sandbox-worker.js', import.meta.url);
 
       return new Promise((resolve) => {
+        let settled = false;
+        const settleInit = (result: Result<void, PluginError>) => {
+          if (settled) return;
+          settled = true;
+          resolve(result);
+        };
+        // A worker that never reaches its ready signal is unusable — settle
+        // the init promise (instead of hanging forever) and drop the dead
+        // reference so a later execute() re-initializes rather than posting
+        // into a dead thread. Callers (runInWorkerSandbox → gateway trigger
+        // preRun gate, agent dynamic-tool executor) depend on initialize()
+        // settling; a hung init halts all schedule-trigger processing.
+        const failInit = (error: unknown) => {
+          this.worker = null;
+          settleInit(
+            err(
+              new PluginError(
+                this.config.pluginId,
+                `Failed to initialize worker: ${getErrorMessage(error)}`
+              )
+            )
+          );
+        };
+
         this.worker = new Worker(workerUrl, {
           workerData: { config: this.config },
           resourceLimits: {
@@ -133,6 +157,9 @@ export class WorkerSandbox {
         });
 
         this.worker.on('error', (error) => {
+          if (!settled) {
+            failInit(error);
+          }
           this.state = 'error';
           if (this.currentReject) {
             this.currentReject(error);
@@ -142,6 +169,10 @@ export class WorkerSandbox {
         });
 
         this.worker.on('exit', (code) => {
+          // Even a code-0 exit before the ready signal is a failed init.
+          if (!settled) {
+            failInit(new Error(`Worker exited during initialization (code ${code})`));
+          }
           this.state = code === 0 ? 'terminated' : 'error';
           if (this.currentReject && code !== 0) {
             this.currentReject(new Error(`Worker exited with code ${code}`));
@@ -156,7 +187,7 @@ export class WorkerSandbox {
           if (message.type === 'result') {
             this.handleWorkerMessage = originalHandler;
             this.state = 'idle';
-            resolve(ok(undefined));
+            settleInit(ok(undefined));
           }
         };
       });

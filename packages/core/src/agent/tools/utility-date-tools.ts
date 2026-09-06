@@ -84,20 +84,45 @@ export const getCurrentDateTimeExecutor: ToolExecutor = async (
         result = { unix: Math.floor(now.getTime() / 1000), unixMs: now.getTime(), timezone };
         break;
       case 'all':
-      default:
+      default: {
+        // Timezone-aware calendar fields. This response previously mixed
+        // THREE bases: date/time from UTC toISOString(), formatted/dayOfWeek
+        // from the requested timezone, and quarter/isWeekend/weekNumber from
+        // the host-local clock — a self-contradictory payload for any
+        // timezone ≠ UTC at the current instant (date said yesterday while
+        // formatted/dayOfWeek said today; round 24). All calendar fields are
+        // now derived from the requested timezone in one pass.
+        const tzParts = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hourCycle: 'h23',
+          weekday: 'long',
+        }).formatToParts(now);
+        const part = (type: Intl.DateTimeFormatPartTypes): string =>
+          tzParts.find((p) => p.type === type)?.value ?? '';
+        const tzMonth = Number(part('month'));
+        const tzWeekday = part('weekday');
+
         result = {
           iso: now.toISOString(),
           formatted: localFormatted,
           unix: Math.floor(now.getTime() / 1000),
           unixMs: now.getTime(),
           timezone,
-          date: now.toISOString().split('T')[0],
-          time: now.toISOString().split('T')[1]?.split('.')[0],
-          dayOfWeek: now.toLocaleDateString('en-US', { weekday: 'long', timeZone: timezone }),
-          weekNumber: getWeekNumber(now),
-          quarter: Math.ceil((now.getMonth() + 1) / 3),
-          isWeekend: [0, 6].includes(now.getDay()),
+          date: `${part('year')}-${part('month')}-${part('day')}`,
+          time: `${part('hour')}:${part('minute')}:${part('second')}`,
+          dayOfWeek: tzWeekday,
+          weekNumber: getWeekNumber(Number(part('year')), tzMonth, Number(part('day'))),
+          quarter: Math.ceil(tzMonth / 3),
+          isWeekend: tzWeekday === 'Saturday' || tzWeekday === 'Sunday',
         };
+        break;
+      }
     }
 
     return { content: JSON.stringify(result) };
@@ -109,8 +134,11 @@ export const getCurrentDateTimeExecutor: ToolExecutor = async (
   }
 };
 
-function getWeekNumber(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+function getWeekNumber(year: number, month: number, day: number): number {
+  // ISO-8601 week number for a calendar date (month is 1-based). Numeric
+  // inputs keep the helper timezone-independent — the caller supplies the
+  // timezone-aware parts.
+  const d = new Date(Date.UTC(year, month - 1, day));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));

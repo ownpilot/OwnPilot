@@ -2039,3 +2039,60 @@ describe('processStreamingViaBus', () => {
     expect(normalized.timestamp).toBeInstanceOf(Date);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Round 33 regression — usage is recorded EXACTLY ONCE per bus-path request
+// ---------------------------------------------------------------------------
+
+describe('processStreamingViaBus usage recording (round 33 regression)', () => {
+  it('records usage EXACTLY ONCE per successful bus-path chat (no double-count)', async () => {
+    const { createMessageBus } = await import('../message-bus.js');
+    const { createAuditMiddleware } = await import('../middleware/audit.js');
+    const { createAgentExecutionMiddleware } = await import('../middleware/agent-execution.js');
+
+    mockGetSessionInfo.mockReturnValue({});
+    mockUsageRecord.mockClear();
+    mockUsageRecord.mockResolvedValue(undefined);
+
+    const usage = { promptTokens: 100, completionTokens: 50, totalTokens: 150 };
+    const agent = {
+      getConversation: () => ({ id: 'c1', systemPrompt: 'sys' }),
+      updateSystemPrompt: () => {},
+      clearAdditionalTools: () => {},
+      chat: async (_c: string, opts: Record<string, unknown>) => {
+        const onChunk = opts.onChunk as ((c: unknown) => void) | undefined;
+        onChunk?.({ type: 'text', delta: 'he', done: false });
+        onChunk?.({ type: 'text', delta: 'llo', done: true, usage });
+        return { ok: true, value: { id: 'm1', content: 'hello', usage } };
+      },
+    } as never;
+
+    const bus = createMessageBus();
+    bus.useNamed('audit', createAuditMiddleware());
+    bus.useNamed('agent-execution', createAgentExecutionMiddleware());
+
+    await processStreamingViaBus(
+      bus,
+      makeSSEStream() as never,
+      {
+        agent,
+        chatMessage: 'hi',
+        body: {},
+        provider: 'anthropic',
+        model: 'claude-4-5-sonnet',
+        userId: 'u1',
+        agentId: 'a1',
+        conversationId: 'c1',
+      } as never
+    );
+
+    // Regression: the audit middleware's exit phase AND the (now removed)
+    // recordStreamUsage call both recorded this same request — every bus-path
+    // chat's tokens/cost were double-counted into budgets and /costs.
+    expect(mockUsageRecord.mock.calls.length).toBe(1);
+    expect(mockUsageRecord.mock.calls[0]![0]).toMatchObject({
+      inputTokens: 100,
+      outputTokens: 50,
+    });
+  });
+});

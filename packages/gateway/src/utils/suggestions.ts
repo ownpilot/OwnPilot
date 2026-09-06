@@ -18,7 +18,11 @@ interface SuggestionExtractionResult {
   suggestions: Suggestion[];
 }
 
-const SUGGESTIONS_REGEX = /<suggestions>\s*(\[[\s\S]*?\])\s*<\/suggestions>\s*$/;
+// Round 35: no end-anchor — a closed tag matches ANYWHERE in the text
+// (mirroring MEMORIES_REGEX). The old \s*$ anchor meant any prose the model
+// appended after a well-formed tag defeated both regexes and the fallback
+// (closer exists → as-is), leaking the raw tag + JSON into displayed chat.
+const SUGGESTIONS_REGEX = /<suggestions>\s*(\[[\s\S]*?\])\s*<\/suggestions>/;
 const UNCLOSED_SUGGESTIONS_REGEX = /<suggestions>\s*(\[[\s\S]*\])\s*$/;
 const MAX_SUGGESTIONS = 5;
 const MAX_TITLE_LENGTH = 40;
@@ -72,7 +76,14 @@ export function extractSuggestions(rawContent: string): SuggestionExtractionResu
     return { content: rawContent, suggestions: [] };
   }
 
-  const content = rawContent.slice(0, match.index).trimEnd();
+  // Round 35: strip ONLY the matched tag span — the old
+  // slice(0, match.index) discarded everything after the tag, which was
+  // harmless under the end-anchor but silently deleted trailing prose once
+  // the anchor was dropped. Preserve text on both sides of the tag.
+  const tagStart = match.index ?? 0;
+  const content = (
+    rawContent.slice(0, tagStart) + rawContent.slice(tagStart + match[0].length)
+  ).trimEnd();
 
   try {
     const parsed: unknown = JSON.parse(match[1]);

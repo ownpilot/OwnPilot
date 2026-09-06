@@ -469,14 +469,23 @@ export async function updateGoalProgress(
     const steps = await goalService.getSteps(userId, goal.id);
     const pendingSteps = steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
 
+    // Sentence-scoped matching: the SENTENCE naming the step must assert
+    // completion. The old check matched the title anywhere in the response
+    // plus a completion keyword anywhere ELSE, so "I haven't finished
+    // Chapter 3" or "Chapter 3 looks hard. Dinner is done." wrongly
+    // completed steps (round 36). A leading negation in the same sentence
+    // blocks the match.
+    const sentences = response.toLowerCase().split(/(?<=[.!?])\s+/);
+    const completionRe = /\b(?:done|complete(?:d)?|finished)\b/;
+    const negationRe =
+      /\b(?:not|never|haven'?t|hasn'?t|didn'?t)\b[^.!?]{0,60}\b(?:done|complete(?:d)?|finished)\b/;
+
     for (const step of pendingSteps) {
-      // Check if step title is mentioned in response as completed
-      if (
-        response.toLowerCase().includes(step.title.toLowerCase()) &&
-        (response.includes('completed') ||
-          response.includes('done') ||
-          response.includes('finished'))
-      ) {
+      const titleLower = step.title.toLowerCase();
+      const mentionedAsCompleted = sentences.some(
+        (s) => s.includes(titleLower) && completionRe.test(s) && !negationRe.test(s)
+      );
+      if (mentionedAsCompleted) {
         // completeStep auto-recalculates goal progress
         await goalService.completeStep(userId, step.id);
       }

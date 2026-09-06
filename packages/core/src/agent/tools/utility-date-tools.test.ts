@@ -54,6 +54,35 @@ describe('getCurrentDateTimeExecutor', () => {
     expect(typeof data.isWeekend).toBe('boolean');
   });
 
+  it('derives all calendar fields from the requested timezone (round 24 regression)', async () => {
+    // 2026-09-05T22:30:30Z is 2026-09-06T01:30:30 in Istanbul (UTC+3):
+    // date/time/quarter/isWeekend/weekNumber must agree with the REQUESTED
+    // zone. Previously date/time came from UTC toISOString() and quarter/
+    // isWeekend/weekNumber from the host clock — a self-contradictory
+    // payload for any zone ≠ UTC at the current instant (the agent would
+    // schedule on the wrong day). Host-timezone-independent by construction.
+    vi.setSystemTime(new Date('2026-09-05T22:30:30.000Z'));
+    const result = await getCurrentDateTimeExecutor({ timezone: 'Europe/Istanbul' });
+    const data = JSON.parse(result.content as string);
+    expect(data.date).toBe('2026-09-06');
+    expect(data.time).toBe('01:30:30');
+    expect(data.dayOfWeek).toBe('Sunday');
+    expect(data.quarter).toBe(3);
+    expect(data.isWeekend).toBe(true);
+    expect(data.weekNumber).toBe(36); // ISO week of 2026-09-06
+  });
+
+  it('keeps calendar fields consistent when the requested zone is UTC', async () => {
+    vi.setSystemTime(new Date('2026-09-05T22:30:30.000Z'));
+    const result = await getCurrentDateTimeExecutor({ timezone: 'UTC' });
+    const data = JSON.parse(result.content as string);
+    expect(data.date).toBe('2026-09-05');
+    expect(data.time).toBe('22:30:30');
+    expect(data.dayOfWeek).toBe('Saturday');
+    expect(data.quarter).toBe(3);
+    expect(data.isWeekend).toBe(true);
+  });
+
   it('should default to all format when no format specified', async () => {
     const result = await getCurrentDateTimeExecutor({});
     const data = JSON.parse(result.content as string);

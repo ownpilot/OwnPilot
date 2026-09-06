@@ -65,6 +65,227 @@ function makeHabitLogRow(overrides: Record<string, unknown> = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// Calendar-day basis (round 28)
+// ---------------------------------------------------------------------------
+
+describe('habits calendar-day basis (round 28)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // Local Sep 6 00:30 — on UTC+ hosts the UTC clock still reads Sep 5
+    // (the discriminator); on UTC hosts these hold as boundaries.
+    vi.setSystemTime(new Date(2026, 8, 6, 0, 30, 0));
+    vi.clearAllMocks();
+    mockAdapter.queryOne.mockImplementation(async (sql: string) =>
+      /FROM habits WHERE/.test(sql) ? makeHabitRow() : null
+    );
+    mockAdapter.query.mockResolvedValue([]);
+    mockAdapter.execute.mockResolvedValue({ changes: 1 });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const insertDateParam = (): string | undefined => {
+    const insert = mockAdapter.execute.mock.calls.find((c) =>
+      /INSERT INTO habit_logs/.test(c[0] as string)
+    );
+    return insert ? (insert[1][3] as string) : undefined;
+  };
+
+  const todayLookupParam = (): string | undefined => {
+    const select = mockAdapter.query.mock.calls.find((c) =>
+      /SELECT \* FROM habit_logs WHERE date/.test(c[0] as string)
+    );
+    return select ? (select[1][0] as string) : undefined;
+  };
+
+  it('logHabit default date is the LOCAL day', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1');
+
+    expect(
+      insertDateParam(),
+      'completing a habit at local 00:30 must log the LOCAL day — the UTC day writes it to yesterday (and onto non-target days for non-daily habits)'
+    ).toBe('2026-09-06');
+  });
+
+  it("getTodayHabits looks up today's logs on the LOCAL day", async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.getTodayHabits();
+
+    expect(
+      todayLookupParam(),
+      "today's log lookup must use the LOCAL day — a UTC day pairs with the local-day dayOfWeek scheduling in the same method"
+    ).toBe('2026-09-06');
+  });
+
+  it('anchor: the write basis and the read basis agree (no mixed basis)', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1');
+    const written = insertDateParam();
+
+    const repo2 = new HabitsRepository('user-1');
+    await repo2.getTodayHabits();
+
+    expect(todayLookupParam()).toBe(written);
+  });
+
+  it('anchor: an explicit date argument is respected verbatim', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1', { date: '2026-01-15' });
+    expect(insertDateParam()).toBe('2026-01-15');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Calendar-day basis (round 28)
+// ---------------------------------------------------------------------------
+
+describe('habits calendar-day basis (round 28)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // Local Sep 6 00:30 — on UTC+ hosts the UTC clock still reads Sep 5
+    // (the discriminator); on UTC hosts these hold as boundaries.
+    vi.setSystemTime(new Date(2026, 8, 6, 0, 30, 0));
+    vi.clearAllMocks();
+    mockAdapter.queryOne.mockImplementation(async (sql: string) =>
+      /FROM habits WHERE/.test(sql) ? makeHabitRow() : null
+    );
+    mockAdapter.query.mockResolvedValue([]);
+    mockAdapter.execute.mockResolvedValue({ changes: 1 });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const insertDateParam = (): string | undefined => {
+    const insert = mockAdapter.execute.mock.calls.find((c) =>
+      /INSERT INTO habit_logs/.test(c[0] as string)
+    );
+    return insert ? (insert[1][3] as string) : undefined;
+  };
+
+  const todayLookupParam = (): string | undefined => {
+    const select = mockAdapter.query.mock.calls.find((c) =>
+      /SELECT \* FROM habit_logs WHERE date/.test(c[0] as string)
+    );
+    return select ? (select[1][0] as string) : undefined;
+  };
+
+  it('logHabit default date is the LOCAL day', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1');
+
+    expect(
+      insertDateParam(),
+      'completing a habit at local 00:30 must log the LOCAL day — the UTC day writes it to yesterday (and onto non-target days for non-daily habits)'
+    ).toBe('2026-09-06');
+  });
+
+  it("getTodayHabits looks up today's logs on the LOCAL day", async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.getTodayHabits();
+
+    expect(
+      todayLookupParam(),
+      "today's log lookup must use the LOCAL day — a UTC day pairs with the local-day dayOfWeek scheduling in the same method"
+    ).toBe('2026-09-06');
+  });
+
+  it('anchor: the write basis and the read basis agree (no mixed basis)', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1');
+    const written = insertDateParam();
+
+    const repo2 = new HabitsRepository('user-1');
+    await repo2.getTodayHabits();
+
+    expect(todayLookupParam()).toBe(written);
+  });
+
+  it('anchor: an explicit date argument is respected verbatim', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1', { date: '2026-01-15' });
+    expect(insertDateParam()).toBe('2026-01-15');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Calendar-day basis (round 28)
+// ---------------------------------------------------------------------------
+
+describe('HabitsRepository calendar-day basis (round 28)', () => {
+  const insertDateParam = (): string | undefined => {
+    const insert = mockAdapter.execute.mock.calls.find((c) =>
+      /INSERT INTO habit_logs/.test(c[0] as string)
+    );
+    return insert ? (insert[1][3] as string) : undefined;
+  };
+
+  const todayLookupParam = (): string | undefined => {
+    const select = mockAdapter.query.mock.calls.find((c) =>
+      /SELECT \* FROM habit_logs WHERE date/.test(c[0] as string)
+    );
+    return select ? (select[1][0] as string) : undefined;
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // Local Sep 6 00:30 — on UTC+ hosts the UTC clock still reads Sep 5
+    // (the discriminator); on UTC hosts these hold as boundaries.
+    vi.setSystemTime(new Date(2026, 8, 6, 0, 30, 0));
+    vi.clearAllMocks();
+    // get(habit) → habit row; getLog → none; logs list → empty.
+    mockAdapter.queryOne.mockImplementation(async (sql: string) =>
+      /FROM habits WHERE/.test(sql) ? makeHabitRow() : null
+    );
+    mockAdapter.query.mockResolvedValue([]);
+    mockAdapter.execute.mockResolvedValue({ changes: 1 });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('logHabit default date is the LOCAL day', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1');
+
+    expect(
+      insertDateParam(),
+      'completing a habit at local 00:30 must log the LOCAL day — the UTC day writes it to yesterday (and onto non-target days for non-daily habits)'
+    ).toBe('2026-09-06');
+  });
+
+  it("getTodayHabits looks up today's logs on the LOCAL day", async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.getTodayHabits();
+
+    expect(
+      todayLookupParam(),
+      "today's log lookup must use the LOCAL day — a UTC day pairs with the local-day dayOfWeek scheduling in the same method"
+    ).toBe('2026-09-06');
+  });
+
+  it('anchor: the write basis and the read basis agree (no mixed basis)', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1');
+    const written = insertDateParam();
+
+    const repo2 = new HabitsRepository('user-1');
+    await repo2.getTodayHabits();
+
+    expect(todayLookupParam()).toBe(written);
+  });
+
+  it('anchor: an explicit date argument is respected verbatim', async () => {
+    const repo = new HabitsRepository('user-1');
+    await repo.logHabit('hab_1', { date: '2026-01-15' });
+    expect(insertDateParam()).toBe('2026-01-15');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 

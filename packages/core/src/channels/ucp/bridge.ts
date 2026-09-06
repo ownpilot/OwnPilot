@@ -25,13 +25,15 @@ const log = getLog('UCPBridge');
  * bridged channel). A pathological owner pattern such as `(a+)+$` against
  * crafted input would spin the event loop indefinitely, hanging the gateway.
  *
- * The check is a conservative, dependency-free "star height" heuristic: reject
- * a pattern when one unbounded quantifier (`*`, `+`, or `{n,}`) is nested inside
- * a group that is itself unbounded-quantified — the structural signature of
- * exponential backtracking. It can over-reject an exotic-but-safe pattern, but
- * bridge filters are simple keyword/substring matchers in practice, so the
- * trade-off favours never letting one hang the process. A pattern that fails to
- * compile is also unsafe.
+ * The check is a conservative, dependency-free heuristic covering the two
+ * structural signatures of exponential backtracking: (1) one unbounded
+ * quantifier (`*`, `+`, or `{n,}`) nested inside a group that is itself
+ * unbounded-quantified ("star height", e.g. `(a+)+`), and (2) an
+ * unbounded-quantified group whose alternation branches can overlap
+ * (e.g. `(a|aa)+`, `(\w|aa)+`, `(.|a)+`). It can over-reject an
+ * exotic-but-safe pattern, but bridge filters are simple keyword/substring
+ * matchers in practice, so the trade-off favours never letting one hang the
+ * process. A pattern that fails to compile is also unsafe.
  */
 export function isSafeRegexPattern(pattern: string): boolean {
   if (typeof pattern !== 'string') return false;
@@ -40,7 +42,7 @@ export function isSafeRegexPattern(pattern: string): boolean {
   } catch {
     return false;
   }
-  return !hasNestedUnboundedQuantifier(pattern);
+  return !hasNestedUnboundedQuantifier(pattern) && !hasAmbiguousQuantifiedAlternation(pattern);
 }
 
 /** True if `s[i]` begins an unbounded quantifier: `*`, `+`, or `{n,}` (no upper bound). */
@@ -98,6 +100,108 @@ function hasNestedUnboundedQuantifier(pattern: string): boolean {
       if (start === undefined) continue;
       if (!unboundedQuantifierAt(pattern, i + 1)) continue;
       if (bodyHasUnboundedQuantifier(pattern.slice(start + 1, i))) return true;
+    }
+  }
+  return false;
+}
+
+/** Split a group body at top-level '|' (escape, char-class, and nested-group aware). */
+function splitTopLevelAlternation(body: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let depth = 0;
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i]!;
+    if (ch === '\\') {
+      current += ch + (body[i + 1] ?? '');
+      i++;
+      continue;
+    }
+    if (ch === '[') {
+      current += ch;
+      i++;
+      while (i < body.length && body[i] !== ']') {
+        if (body[i] === '\\') {
+          current += body[i]!;
+          i++;
+        }
+        current += body[i] ?? '';
+        i++;
+      }
+      current += body[i] ?? ']';
+      continue;
+    }
+    if (ch === '(') depth++;
+    if (ch === ')') depth--;
+    if (ch === '|' && depth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  parts.push(current);
+  return parts;
+}
+
+/**
+ * First literal character of an alternation branch (after an optional anchor
+ * or group markers), or null when the branch leads with anything that is not
+ * a single literal — a wildcard (.), a class escape (\w, \d…), a character
+ * class ([…]), a group, or an empty branch. Non-literal leading tokens are
+ * treated as potentially overlapping every other branch (conservative).
+ */
+function leadingLiteral(branch: string): string | null {
+  let s = branch;
+  if (s.startsWith('^')) s = s.slice(1);
+  if (s.startsWith('?:') || s.startsWith('?=') || s.startsWith('?!')) s = s.slice(2);
+  else if (s.startsWith('?<=') || s.startsWith('?<!')) s = s.slice(3);
+  if (s.length === 0) return null;
+  const c = s[0]!;
+  if (c === '.' || c === '\\' || c === '[' || c === '(') return null;
+  return c;
+}
+
+/**
+ * Detect the OTHER canonical evil-regex signature besides nested quantifiers:
+ * an unbounded-quantified group whose top-level alternation branches can
+ * overlap — (a|aa)+, (ab|a)+, (\w|aa)+, (.|a)+. Overlapping branches make the
+ * unbounded repetition ambiguous, so a non-matching tail forces exponential
+ * backtracking exactly like (a+)+. Conservative by design: any branch leading
+ * with a class/wildcard/group is treated as overlapping, so exotic-but-safe
+ * patterns like (\d|x)+ are over-rejected — same trade-off as the
+ * nested-quantifier check (never let a filter hang the process).
+ */
+function hasAmbiguousQuantifiedAlternation(pattern: string): boolean {
+  const groupStarts: number[] = [];
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === '\\') {
+      i++;
+      continue;
+    }
+    if (ch === '[') {
+      i++;
+      while (i < pattern.length && pattern[i] !== ']') {
+        if (pattern[i] === '\\') i++;
+        i++;
+      }
+      continue;
+    }
+    if (ch === '(') {
+      groupStarts.push(i);
+      continue;
+    }
+    if (ch === ')') {
+      const start = groupStarts.pop();
+      if (start === undefined) continue;
+      if (!unboundedQuantifierAt(pattern, i + 1)) continue;
+      const branches = splitTopLevelAlternation(pattern.slice(start + 1, i));
+      if (branches.length < 2) continue;
+      const tokens = branches.map((b) => leadingLiteral(b));
+      if (tokens.some((t) => t === null)) return true;
+      const literals = tokens as string[];
+      if (new Set(literals).size !== literals.length) return true;
     }
   }
   return false;

@@ -325,6 +325,65 @@ describe('resolveAuthForRequest', () => {
     expect(auth?.refreshToken).toBe('keep-this-rt');
   });
 
+  it('shares ONE refresh across concurrent callers (single-flight)', async () => {
+    // Regression: without dedup, a second concurrent caller refreshed with
+    // the same (already-consumed, rotating) refresh token — providers treat
+    // that replay as a compromise signal and invalidate the whole grant.
+    mockGetResolvedAuth.mockResolvedValue({
+      method: 'oauth2_device_code',
+      value: 'old-at',
+      refreshToken: 'old-rt',
+      expiresAt: Date.now() - 1000,
+    });
+    mockIsExpired.mockReturnValue(true);
+    mockGetProviderConfig.mockReturnValue(providerWithOAuth());
+
+    let release!: () => void;
+    const gate = new Promise<void>((resolveGate) => {
+      release = resolveGate;
+    });
+    mockRefresh.mockImplementationOnce(() =>
+      gate.then(() => ({ accessToken: 'new-at', refreshToken: 'new-rt', expiresIn: 3600 }))
+    );
+    mockRefresh.mockImplementationOnce(() =>
+      Promise.reject(new Error('invalid_grant: refresh token already used'))
+    );
+
+    const p1 = resolveAuthForRequest('codex');
+    const p2 = resolveAuthForRequest('codex');
+    // Let both callers reach the (deferred) refresh before releasing it.
+    await new Promise((r) => setTimeout(r, 25));
+    release();
+    const [r1, r2] = await Promise.all([p1, p2]);
+
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
+    expect(r1?.value).toBe('new-at');
+    expect(r2?.value).toBe('new-at');
+    expect(r1?.refreshToken).toBe('new-rt');
+    expect(r2?.refreshToken).toBe('new-rt');
+    expect(mockSetResolvedAuth).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshes again for sequential callers once the in-flight refresh settles', async () => {
+    mockGetResolvedAuth.mockResolvedValue({
+      method: 'oauth2_device_code',
+      value: 'old-at',
+      refreshToken: 'old-rt',
+      expiresAt: Date.now() - 1000,
+    });
+    mockIsExpired.mockReturnValue(true);
+    mockGetProviderConfig.mockReturnValue(providerWithOAuth());
+    mockRefresh.mockResolvedValue({ accessToken: 'new-at', expiresIn: 3600 });
+
+    const r1 = await resolveAuthForRequest('codex');
+    const r2 = await resolveAuthForRequest('codex');
+
+    // Dedup covers only OVERLAPPING refreshes — settled calls refresh again.
+    expect(mockRefresh).toHaveBeenCalledTimes(2);
+    expect(r1?.value).toBe('new-at');
+    expect(r2?.value).toBe('new-at');
+  });
+
   it('returns stale token (no throw) when refresh fails — provider blip survival', async () => {
     mockGetResolvedAuth.mockResolvedValue({
       method: 'oauth2_device_code',

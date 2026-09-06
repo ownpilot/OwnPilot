@@ -94,12 +94,24 @@ describe('extractSuggestions', () => {
     expect(result.suggestions).toEqual([{ title: 'valid', detail: 'item' }]);
   });
 
-  it('does NOT match tag in the middle of content', () => {
+  it('matches and strips a closed tag with prose after it (round 35 regression)', () => {
+    // The old \s*$ end-anchor meant any trailing chatty line made BOTH regexes
+    // miss and the fallback return content as-is — the raw tag + JSON leaked
+    // into displayed chat (and the suggestions were lost). A closed tag is
+    // recognized wherever it appears, mirroring the memories extractor.
+    const raw =
+      'Here is my answer.\n<suggestions>[{"title":"Try this","detail":"It helps"}]</suggestions>\nLet me know if you need anything else!';
+    const result = extractSuggestions(raw);
+    expect(result.content).toBe('Here is my answer.\n\nLet me know if you need anything else!');
+    expect(result.suggestions).toEqual([{ title: 'Try this', detail: 'It helps' }]);
+  });
+
+  it('matches a tag in the middle of content (round 35: no end-anchor)', () => {
     const raw =
       'Start <suggestions>[{"title":"mid","detail":"test"}]</suggestions> end of response.';
     const result = extractSuggestions(raw);
-    expect(result.content).toBe(raw);
-    expect(result.suggestions).toEqual([]);
+    expect(result.content).toBe('Start  end of response.');
+    expect(result.suggestions).toEqual([{ title: 'mid', detail: 'test' }]);
   });
 
   it('returns empty suggestions for empty array', () => {

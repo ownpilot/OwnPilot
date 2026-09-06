@@ -1,10 +1,11 @@
 /**
  * UCP Middleware Tests
- * Tests for: rate-limiter, thread-tracker, language-detector
+ * Tests for: rate-limiter, inbound-rate-limiter, thread-tracker, language-detector
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { rateLimiter } from './rate-limiter.js';
+import { inboundRateLimiter, InboundRateLimitError } from './inbound-rate-limiter.js';
 import { threadTracker, createInMemoryThreadStore } from './thread-tracker.js';
 import { languageDetector, detectLanguage } from './language-detector.js';
 import type { UCPMessage } from '../types.js';
@@ -280,5 +281,199 @@ describe('languageDetector middleware', () => {
     // Should not throw
     await mw(msg, next);
     expect(next).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================================================
+// Thread Store — LRU eviction (round 19 regression)
+// ============================================================================
+
+describe('createInMemoryThreadStore LRU eviction', () => {
+  it('evicts the least-recently-WRITTEN entry, keeping recently-updated mappings', () => {
+    // Regression: setThread documented "LRU eviction" but Map.set on an
+    // existing key preserves its ORIGINAL insertion position — the overflow
+    // eviction dropped the first-inserted (oldest-still-active) mapping even
+    // when it had just been written, while stale later entries survived.
+    const store = createInMemoryThreadStore();
+    store.setThread('a', 'thread-A');
+    for (let i = 0; i < 49_999; i++) store.setThread(`b${i}`, 'thread-B');
+
+    // Touch 'a' — makes it the most recently written entry.
+    store.setThread('a', 'thread-A2');
+    // Overflow by one — exactly one eviction must fire.
+    store.setThread('new', 'thread-N');
+
+    expect(store.getThread('a'), 'recently-written mapping must survive').toBe('thread-A2');
+    expect(store.getThread('b0'), 'least-recently-written entry is the victim').toBeUndefined();
+    expect(store.getThread('new')).toBe('thread-N');
+    expect(store.getThread('b1')).toBe('thread-B');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// inboundRateLimiter — cap eviction recency (round 20)
+// ---------------------------------------------------------------------------
+
+describe('inboundRateLimiter cap eviction (LRU recency)', () => {
+  it("keeps an actively messaging sender's window across an unrelated cap eviction", async () => {
+    // Regression: maxTrackedSenders documented "LRU eviction", but entries
+    // were only ever `set` on a sender's FIRST message — later messages
+    // never re-inserted the key, so the cap eviction removed the FIRST-SEEN
+    // sender, wiping an actively messaging sender's window (fresh quota in
+    // the same window = limit bypass).
+    const mw = inboundRateLimiter({ maxMessages: 2, windowMs: 3_600_000 });
+
+    const inbound = (senderId: string) =>
+      mw(
+        makeMessage({
+          direction: 'inbound',
+          channelInstanceId: 'ch1',
+          sender: { id: senderId, platform: 'telegram' } as UCPMessage['sender'],
+        }),
+        async () => 'ok'
+      );
+
+    // 'a' is the first-seen sender; fill to exactly the 10_000 cap.
+    await inbound('a');
+    for (let i = 0; i < 9_999; i++) await inbound(`b${i}`);
+    // 'a' is active again (2/2 used) — recent use under a true LRU.
+    await inbound('a');
+    // One more NEW sender overflows the cap and triggers the eviction.
+    await inbound('c-new');
+
+    // The at-limit, just-active sender must still be rejected — their
+    // window survived because the eviction honors recency now.
+    await expect(inbound('a')).rejects.toBeInstanceOf(InboundRateLimitError);
+
+    // Ordinary limiting stays intact for surviving entries: 'b1' used 1/2
+    // during the fill, so the next message passes and the one after throws.
+    await expect(inbound('b1')).resolves.toBe('ok');
+    await expect(inbound('b1')).rejects.toBeInstanceOf(InboundRateLimitError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// inboundRateLimiter — cap eviction recency (round 20)
+// ---------------------------------------------------------------------------
+
+describe('inboundRateLimiter cap eviction (LRU recency)', () => {
+  it('keeps an actively messaging sender\u2019s window across an unrelated cap eviction', async () => {
+    // Regression: maxTrackedSenders documented "LRU eviction", but entries
+    // were only ever `set` on a sender's FIRST message — later messages
+    // never re-inserted the key, so the cap eviction removed the FIRST-SEEN
+    // sender, wiping an actively messaging sender's window (fresh quota in
+    // the same window = limit bypass).
+    const mw = inboundRateLimiter({ maxMessages: 2, windowMs: 3_600_000 });
+
+    const inbound = (senderId: string) =>
+      mw(
+        makeMessage({
+          direction: 'inbound',
+          channelInstanceId: 'ch1',
+          sender: { id: senderId, platform: 'telegram' } as UCPMessage['sender'],
+        }),
+        async () => 'ok'
+      );
+
+    // 'a' is the first-seen sender; fill to exactly the 10_000 cap.
+    await inbound('a');
+    for (let i = 0; i < 9_999; i++) await inbound(`b${i}`);
+    // 'a' is active again (2/2 used) — recent use under a true LRU.
+    await inbound('a');
+    // One more NEW sender overflows the cap and triggers the eviction.
+    await inbound('c-new');
+
+    // The at-limit, just-active sender must still be rejected — their
+    // window survived because the eviction honors recency now.
+    await expect(inbound('a')).rejects.toBeInstanceOf(InboundRateLimitError);
+
+    // Ordinary limiting stays intact for surviving entries: 'b1' used 1/2
+    // during the fill, so the next message passes and the one after throws.
+    await expect(inbound('b1')).resolves.toBe('ok');
+    await expect(inbound('b1')).rejects.toBeInstanceOf(InboundRateLimitError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// inboundRateLimiter — cap eviction recency (round 20)
+// ---------------------------------------------------------------------------
+
+describe('inboundRateLimiter cap eviction (LRU recency)', () => {
+  it('keeps an actively messaging sender\u2019s window across an unrelated cap eviction', async () => {
+    // Regression: maxTrackedSenders documented "LRU eviction", but entries
+    // were only ever `set` on a sender's FIRST message — later messages
+    // never re-inserted the key, so the cap eviction removed the FIRST-SEEN
+    // sender, wiping an actively messaging sender's window (fresh quota in
+    // the same window = limit bypass).
+    const mw = inboundRateLimiter({ maxMessages: 2, windowMs: 3_600_000 });
+
+    const inbound = (senderId: string) =>
+      mw(
+        makeMessage({
+          direction: 'inbound',
+          channelInstanceId: 'ch1',
+          sender: { id: senderId, platform: 'telegram' } as UCPMessage['sender'],
+        }),
+        async () => 'ok'
+      );
+
+    // 'a' is the first-seen sender; fill to exactly the 10_000 cap.
+    await inbound('a');
+    for (let i = 0; i < 9_999; i++) await inbound(`b${i}`);
+    // 'a' is active again (2/2 used) — recent use under a true LRU.
+    await inbound('a');
+    // One more NEW sender overflows the cap and triggers the eviction.
+    await inbound('c-new');
+
+    // The at-limit, just-active sender must still be rejected — their
+    // window survived because the eviction honors recency now.
+    await expect(inbound('a')).rejects.toBeInstanceOf(InboundRateLimitError);
+
+    // Ordinary limiting stays intact for surviving entries: 'b1' used 1/2
+    // during the fill, so the next message passes and the one after throws.
+    await expect(inbound('b1')).resolves.toBe('ok');
+    await expect(inbound('b1')).rejects.toBeInstanceOf(InboundRateLimitError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// inboundRateLimiter — cap eviction recency (round 20)
+// ---------------------------------------------------------------------------
+
+describe('inboundRateLimiter cap eviction (LRU recency)', () => {
+  it("keeps an actively messaging sender's window across an unrelated cap eviction", async () => {
+    // Regression: maxTrackedSenders documented "LRU eviction", but entries
+    // were only ever `set` on a sender's FIRST message — later messages
+    // never re-inserted the key, so the cap eviction removed the FIRST-SEEN
+    // sender, wiping an actively messaging sender's window (fresh quota in
+    // the same window = limit bypass).
+    const mw = inboundRateLimiter({ maxMessages: 2, windowMs: 3_600_000 });
+
+    const inbound = (senderId: string) =>
+      mw(
+        makeMessage({
+          direction: 'inbound',
+          channelInstanceId: 'ch1',
+          sender: { id: senderId, platform: 'telegram' } as UCPMessage['sender'],
+        }),
+        async () => 'ok'
+      );
+
+    // 'a' is the first-seen sender; fill to exactly the 10_000 cap.
+    await inbound('a');
+    for (let i = 0; i < 9_999; i++) await inbound(`b${i}`);
+    // 'a' is active again (2/2 used) — recent use under a true LRU.
+    await inbound('a');
+    // One more NEW sender overflows the cap and triggers the eviction.
+    await inbound('c-new');
+
+    // The at-limit, just-active sender must still be rejected — their
+    // window survived because the eviction honors recency now.
+    await expect(inbound('a')).rejects.toBeInstanceOf(InboundRateLimitError);
+
+    // Ordinary limiting stays intact for surviving entries: 'b1' used 1/2
+    // during the fill, so the next message passes and the one after throws.
+    await expect(inbound('b1')).resolves.toBe('ok');
+    await expect(inbound('b1')).rejects.toBeInstanceOf(InboundRateLimitError);
   });
 });

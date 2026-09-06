@@ -1836,3 +1836,74 @@ describe('WorkerSandbox host-function RPC bridge', () => {
     );
   });
 });
+
+describe('WorkerSandbox worker startup failure', () => {
+  const RACE_MS = 2000;
+
+  /** Race a promise against a timeout; report whether it settled. */
+  function withTimeout<T>(
+    p: Promise<T>
+  ): Promise<{ settled: true; value: T } | { settled: false }> {
+    return Promise.race([
+      p.then((value) => ({ settled: true as const, value })),
+      new Promise<{ settled: false }>((r) => setTimeout(() => r({ settled: false }), RACE_MS)),
+    ]);
+  }
+
+  /** Simulate a worker that fails to START: fires `event` instead of ready. */
+  function setupFailingStartupWorker(event: 'error' | 'exit') {
+    mockWorkerInstance.on.mockImplementation((ev: string, handler: (...a: unknown[]) => void) => {
+      if (ev === event) {
+        setTimeout(() => {
+          if (event === 'error') handler(new Error('Cannot find module sandbox-worker.js'));
+          else handler(1);
+        }, 0);
+      }
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    codeIsValid();
+  });
+
+  it("initialize() settles with an error Result when the worker 'error' event fires before ready", async () => {
+    // Regression: the init promise used to stay pending forever on a failed
+    // worker start, hanging runInWorkerSandbox callers (trigger preRun gate,
+    // dynamic-tool executor) — in the trigger engine a hung execute kept
+    // isProcessingSchedule true and halted ALL schedule triggers until restart.
+    setupFailingStartupWorker('error');
+    const sandbox = new WorkerSandbox(makeConfig());
+
+    const outcome = await withTimeout(sandbox.initialize());
+
+    expect(outcome.settled, 'initialize() never settled').toBe(true);
+    if (outcome.settled) {
+      expect(outcome.value.ok).toBe(false);
+    }
+  });
+
+  it('initialize() settles with an error Result when the worker exits before ready', async () => {
+    setupFailingStartupWorker('exit');
+    const sandbox = new WorkerSandbox(makeConfig());
+
+    const outcome = await withTimeout(sandbox.initialize());
+
+    expect(outcome.settled, 'initialize() never settled on exit-before-ready').toBe(true);
+    if (outcome.settled) {
+      expect(outcome.value.ok).toBe(false);
+    }
+  });
+
+  it('execute() surfaces worker startup failure instead of hanging', async () => {
+    setupFailingStartupWorker('error');
+    const sandbox = new WorkerSandbox(makeConfig());
+
+    const outcome = await withTimeout(sandbox.execute('return 1'));
+
+    expect(outcome.settled, 'execute() never settled').toBe(true);
+    if (outcome.settled) {
+      expect(outcome.value.ok).toBe(false);
+    }
+  });
+});

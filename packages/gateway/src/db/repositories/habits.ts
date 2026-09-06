@@ -332,7 +332,7 @@ export class HabitsRepository extends BaseRepository {
     const habit = await this.get(habitId);
     if (!habit) return null;
 
-    const date: string = options.date ?? new Date().toISOString().split('T')[0]!;
+    const date: string = options.date ?? this.localDayString(new Date());
     const count = options.count ?? 1;
 
     // Check if log exists for this date
@@ -416,6 +416,18 @@ export class HabitsRepository extends BaseRepository {
   // ---------------------------------------------------------------------------
   // Stats & Streaks
   // ---------------------------------------------------------------------------
+
+  /** Local-day 'YYYY-MM-DD' — habit completions are user-calendar days and
+   * must share ONE basis with the local-day scheduling semantics
+   * (getTodayHabits' dayOfWeek, the streak-alive check's local midnight).
+   * The previous UTC-day derivations logged post-midnight completions on
+   * the previous calendar day (and onto non-target days for non-daily
+   * habits) — round 28. */
+  private localDayString(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+      date.getDate()
+    ).padStart(2, '0')}`;
+  }
 
   private async updateHabitStats(habitId: string): Promise<void> {
     const habit = await this.get(habitId);
@@ -538,10 +550,10 @@ export class HabitsRepository extends BaseRepository {
     monthAgo.setDate(today.getDate() - 30);
 
     const weeklyLogs = await this.getLogs(habitId, {
-      startDate: weekAgo.toISOString().split('T')[0],
+      startDate: this.localDayString(weekAgo),
     });
     const monthlyLogs = await this.getLogs(habitId, {
-      startDate: monthAgo.toISOString().split('T')[0],
+      startDate: this.localDayString(monthAgo),
     });
 
     const weeklyCompletions = weeklyLogs.reduce((sum, log) => sum + log.count, 0);
@@ -574,7 +586,7 @@ export class HabitsRepository extends BaseRepository {
 
   async getTodayHabits(): Promise<HabitWithTodayStatus[]> {
     const today = new Date();
-    const todayStr: string = today.toISOString().split('T')[0]!;
+    const todayStr: string = this.localDayString(today);
     const dayOfWeek = today.getDay();
 
     const habits = await this.list({ isArchived: false });

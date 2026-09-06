@@ -252,6 +252,16 @@ export const addExpenseTool: ToolDefinition = {
   },
 };
 
+/** Local-day 'YYYY-MM-DD' — the basis of user-facing expense dates and
+ * summary windows. toISOString() is UTC: in UTC+ timezones an expense added
+ * at local 00:30 would be stamped YESTERDAY, and a summary could pair a
+ * LOCAL month start with a UTC end day (an inverted, empty window). */
+function localDayString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+}
+
 export const addExpenseExecutor: ToolExecutor = async (
   args,
   _context
@@ -261,7 +271,7 @@ export const addExpenseExecutor: ToolExecutor = async (
 
     const expense: ExpenseEntry = {
       id: generateExpenseId(),
-      date: (args.date as string) ?? new Date().toISOString().split('T')[0]!,
+      date: (args.date as string) ?? localDayString(new Date()),
       amount: args.amount as number,
       currency: (args.currency as string) ?? 'TRY',
       category: args.category as ExpenseCategory,
@@ -387,7 +397,7 @@ export const batchAddExpensesExecutor: ToolExecutor = async (
     for (const input of expensesInput) {
       const expense: ExpenseEntry = {
         id: generateExpenseId(),
-        date: input.date ?? new Date().toISOString().split('T')[0]!,
+        date: input.date ?? localDayString(new Date()),
         amount: input.amount,
         currency: input.currency ?? 'TRY',
         category: input.category,
@@ -790,7 +800,7 @@ export const expenseSummaryExecutor: ToolExecutor = async (
       startDate = args.startDate as string;
       endDate = args.endDate as string;
     } else {
-      endDate = now.toISOString().split('T')[0]!;
+      endDate = localDayString(now);
 
       switch (period) {
         case 'today':
@@ -799,7 +809,7 @@ export const expenseSummaryExecutor: ToolExecutor = async (
         case 'this_week': {
           const weekStart = new Date(now);
           weekStart.setDate(now.getDate() - now.getDay());
-          startDate = weekStart.toISOString().split('T')[0]!;
+          startDate = localDayString(weekStart);
           break;
         }
         case 'this_month':
@@ -808,8 +818,8 @@ export const expenseSummaryExecutor: ToolExecutor = async (
         case 'last_month': {
           const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
           const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-          startDate = lastMonth.toISOString().split('T')[0]!;
-          endDate = lastMonthEnd.toISOString().split('T')[0]!;
+          startDate = localDayString(lastMonth);
+          endDate = localDayString(lastMonthEnd);
           break;
         }
         case 'this_year':
