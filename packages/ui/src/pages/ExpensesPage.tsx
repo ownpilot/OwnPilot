@@ -22,6 +22,7 @@ import {
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { expensesApi } from '../api';
+import { localDayString, parseLocalDay } from '../utils/formatters';
 import type {
   ExpenseEntry,
   ExpenseMonthlyResponse as MonthlyResponse,
@@ -528,7 +529,10 @@ export function ExpensesPage() {
                         {expense.description}
                       </div>
                       <div className="text-xs text-text-muted dark:text-dark-text-muted">
-                        {new Date(expense.date).toLocaleDateString('en-US')} •{' '}
+                        {/* expense.date is a local calendar day; new Date(day)
+                            parses UTC midnight = the previous local evening
+                            west of UTC, rendering the day before. (round 53) */}
+                        {parseLocalDay(expense.date).toLocaleDateString('en-US')} •{' '}
                         {CATEGORY_LABELS[expense.category] || expense.category}
                       </div>
                     </div>
@@ -594,7 +598,10 @@ function ExpenseFormModal({
   const toast = useToast();
   const isEditing = !!expense;
   const [formData, setFormData] = useState({
-    date: expense?.date ?? new Date().toISOString().split('T')[0]!,
+    // `localDayString()` not `toISOString()`: the UTC day is already TOMORROW
+    // during a local evening west of UTC, and this default is persisted verbatim
+    // by handleSubmit -> expensesApi.create when the user leaves it untouched.
+    date: expense?.date ?? localDayString(),
     amount: expense?.amount?.toString() ?? '',
     currency: expense?.currency ?? 'TRY',
     category: expense?.category ?? 'other',
