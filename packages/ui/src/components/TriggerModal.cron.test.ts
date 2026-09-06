@@ -7,6 +7,7 @@
  * same, otherwise triggers the platform supports cannot be saved from the
  * web UI (TriggerModal + TriggerWizard both gate on this function).
  */
+import { describe, it, expect } from 'vitest';
 import { validateCron } from './TriggerModal';
 
 describe('validateCron', () => {

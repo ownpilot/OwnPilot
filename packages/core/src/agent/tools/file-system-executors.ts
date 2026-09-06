@@ -13,6 +13,7 @@ import { getErrorMessage } from '../../services/error-utils.js';
 import { isBlockedUrl, safeFetch } from './web-fetch.js';
 import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
 import { isPathAllowedAsync, resolveFilePath } from './file-security.js';
+import { isSafeRegexPattern } from '../../channels/ucp/bridge.js';
 
 /** Maximum file size for read/write operations (10 MB) */
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -331,6 +332,21 @@ export const searchFilesExecutor: ToolExecutor = async (
     } catch {
       return {
         content: JSON.stringify({ error: `Invalid search pattern: ${query}` }),
+        isError: true,
+      };
+    }
+
+    // ReDoS guard — same contract as the UCP bridge filter patterns: the
+    // query is LLM-authored free text compiled raw and run with .test()
+    // against every line of every file under the search path. A
+    // catastrophic-backtracking pattern compiles fine but spins the event
+    // loop for the entire gateway (seconds to minutes per line). Reject it
+    // up front; benign literals and safe regexes are unaffected.
+    if (!isSafeRegexPattern(query)) {
+      return {
+        content: JSON.stringify({
+          error: `Unsafe search pattern rejected (catastrophic backtracking risk): ${query}`,
+        }),
         isError: true,
       };
     }
