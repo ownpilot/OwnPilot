@@ -13,6 +13,17 @@ import { ExpensesRepository } from '../db/repositories/expenses.js';
 import type { ToolExecutionResult } from '../services/tool/executor.js';
 import { wsGateway } from '../ws/server.js';
 
+/** Local-day 'YYYY-MM-DD' — expense dates and summary windows are
+ * user-calendar days (the DB-backed twin of round 27's core fix).
+ * toISOString() is UTC: in UTC+ timezones an expense added at local 00:30
+ * would be stamped YESTERDAY, and a LOCAL month start paired with a UTC
+ * end day produced an inverted, empty summary window. */
+function localDayString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+}
+
 // ============================================================================
 // Executor
 // ============================================================================
@@ -28,7 +39,7 @@ export async function executeExpenseTool(
     switch (toolName) {
       case 'add_expense': {
         const expense = await repo.create({
-          date: (args.date as string) ?? new Date().toISOString().split('T')[0]!,
+          date: (args.date as string) ?? localDayString(new Date()),
           amount: args.amount as number,
           currency: (args.currency as string) ?? 'TRY',
           category: (args.category as string) ?? 'other',
@@ -54,7 +65,7 @@ export async function executeExpenseTool(
         const results = [];
         for (const item of items) {
           const expense = await repo.create({
-            date: (item.date as string) ?? new Date().toISOString().split('T')[0]!,
+            date: (item.date as string) ?? localDayString(new Date()),
             amount: item.amount as number,
             currency: (item.currency as string) ?? 'TRY',
             category: (item.category as string) ?? 'other',
@@ -98,30 +109,30 @@ export async function executeExpenseTool(
 
         switch (period) {
           case 'today':
-            dateFrom = dateTo = now.toISOString().split('T')[0]!;
+            dateFrom = dateTo = localDayString(now);
             break;
           case 'this_week': {
             const day = now.getDay();
             const start = new Date(now);
             start.setDate(now.getDate() - day);
-            dateFrom = start.toISOString().split('T')[0]!;
-            dateTo = now.toISOString().split('T')[0]!;
+            dateFrom = localDayString(start);
+            dateTo = localDayString(now);
             break;
           }
           case 'this_month':
             dateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-            dateTo = now.toISOString().split('T')[0]!;
+            dateTo = localDayString(now);
             break;
           case 'last_month': {
             const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             const lastEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-            dateFrom = last.toISOString().split('T')[0]!;
-            dateTo = lastEnd.toISOString().split('T')[0]!;
+            dateFrom = localDayString(last);
+            dateTo = localDayString(lastEnd);
             break;
           }
           case 'this_year':
             dateFrom = `${now.getFullYear()}-01-01`;
-            dateTo = now.toISOString().split('T')[0]!;
+            dateTo = localDayString(now);
             break;
           case 'all_time':
             break;

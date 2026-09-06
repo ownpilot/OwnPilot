@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ── Mocks ──
 
@@ -162,5 +162,52 @@ describe('executeExpenseTool', () => {
     );
     expect(result.success).toBe(false);
     expect(result.error).toContain('DB down');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Calendar-day basis (round 41 regression) — the DB-backed twin of round 27
+// ---------------------------------------------------------------------------
+
+describe('executeExpenseTool calendar-day basis (round 41 regression)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('add_expense defaults to the LOCAL day, not the UTC day', async () => {
+    vi.useFakeTimers();
+    // Local Oct 1 00:30 — on UTC+ hosts the UTC clock still reads Sep 30,
+    // so the old UTC-derived default stamped the expense YESTERDAY.
+    vi.setSystemTime(new Date(2026, 9, 1, 0, 30, 0));
+
+    await executeExpenseTool(
+      'add_expense',
+      { amount: 1, category: 'food', description: 'late-night snack' },
+      'user-1'
+    );
+
+    expect(mockRepo.create.mock.calls[0]![0]).toMatchObject({ date: '2026-10-01' });
+  });
+
+  it('expense_summary this_month window is locally based and never inverted', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 1, 0, 30, 0));
+
+    await executeExpenseTool('expense_summary', { period: 'this_month' }, 'user-1');
+
+    // Regression: the old code paired a LOCAL month start with a UTC end
+    // day — at local month start in UTC+ zones the window was INVERTED
+    // ([2026-10-01, 2026-09-30]) and selected nothing.
+    const [from, to] = mockRepo.getSummary.mock.calls[0]! as [string, string];
+    expect(from <= to).toBe(true);
+    expect(to).toBe('2026-10-01');
+  });
+
+  it('expense_summary today window equals the local day', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 1, 0, 30, 0));
+
+    await executeExpenseTool('expense_summary', { period: 'today' }, 'user-1');
+
+    const [from, to] = mockRepo.getSummary.mock.calls[0]! as [string, string];
+    expect([from, to]).toEqual(['2026-10-01', '2026-10-01']);
   });
 });
