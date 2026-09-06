@@ -19,6 +19,7 @@ import {
 } from '../pages/ChatPage.starters';
 import { tasksApi, goalsApi, calendarApi, notesApi, memoriesApi, habitsApi } from '../api';
 import { ignoreError } from '../utils/ignore-error';
+import { localDayString } from '../utils/formatters';
 
 interface ChatStarterPromptsProps {
   /** Whether to show the starter prompts (true when messages is empty) */
@@ -67,14 +68,23 @@ export function ChatStarterPrompts({
     const today = new Date();
     const weekFromNow = new Date(today);
     weekFromNow.setDate(today.getDate() + 7);
-    const isoDate = (date: Date) => date.toISOString().slice(0, 10);
 
     async function loadPersonalStarters() {
       const [tasksRes, goalsRes, calendarRes, notesRes, memoriesRes, habitsRes] =
         await Promise.allSettled([
           tasksApi.list({ status: ['pending', 'in_progress'] }),
           goalsApi.list({ status: 'active' }),
-          calendarApi.list({ start: isoDate(today), end: isoDate(weekFromNow) }),
+          // GET /calendar reads ONLY startAfter/startBefore (gateway
+          // personal-data.ts:411-412); the previous { start, end } params were
+          // silently dropped, so this chip listed ALL events. Day strings pass
+          // through the repo filter verbatim (calendar.ts:122-123, :249-257),
+          // so [today, today+7) is exactly the 7 local days. localDayString()
+          // keeps the basis local — toISOString() reports the UTC day, which is
+          // already tomorrow during a western evening. (round 52)
+          calendarApi.list({
+            startAfter: localDayString(today),
+            startBefore: localDayString(weekFromNow),
+          }),
           notesApi.list({ limit: '5' }),
           memoriesApi.list({ limit: '5' }),
           habitsApi.getToday(),
