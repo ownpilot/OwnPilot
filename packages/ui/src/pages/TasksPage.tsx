@@ -24,6 +24,7 @@ import { useModalClose, useDebouncedCallback } from '../hooks';
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { tasksApi } from '../api';
 import type { Task } from '../types';
+import { localDayString } from '../utils/formatters';
 import { PageHomeTab } from '../components/PageHomeTab';
 
 const priorityColors = {
@@ -360,10 +361,11 @@ function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
   const isCompleted = task.status === 'completed';
   const isCancelled = task.status === 'cancelled';
   const isDone = isCompleted || isCancelled;
-  const isOverdue =
-    task.dueDate &&
-    !isDone &&
-    new Date(task.dueDate) < new Date(new Date().toISOString().split('T')[0]!);
+  // Both sides are local 'YYYY-MM-DD' calendar days (dueDate is date-only; the
+  // separate dueTime field carries the time), so zero-padded string compare is
+  // chronological. Comparing Date objects built from `toISOString()` mixed the
+  // local due date with the UTC day (round 46).
+  const isOverdue = !!task.dueDate && !isDone && task.dueDate < localDayString();
 
   return (
     <div

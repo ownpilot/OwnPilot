@@ -22,6 +22,7 @@ import { SkeletonCard } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { calendarApi } from '../api';
 import type { CalendarEvent } from '../api';
+import { localDayString } from '../utils/formatters';
 import { PageHomeTab } from '../components/PageHomeTab';
 
 const colorOptions = [
@@ -45,10 +46,16 @@ export function CalendarPage() {
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
+  // One hoisted local-today value feeds every "today" test below. Two of the
+  // previous expressions each called `new Date()` independently, so a render
+  // straddling midnight could classify the same event as both today AND
+  // upcoming. The basis must be local: `startDate` is a local calendar day,
+  // while `toISOString()` reports the UTC day (round 46).
+  const localToday = localDayString();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]!);
+  const [selectedDate, setSelectedDate] = useState(localToday);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
@@ -119,11 +126,9 @@ export function CalendarPage() {
     }
   };
 
-  const todayEvents = events.filter((e) => e.startDate === new Date().toISOString().split('T')[0]);
+  const todayEvents = events.filter((e) => e.startDate === localToday);
 
-  const upcomingEvents = events.filter(
-    (e) => e.startDate > new Date().toISOString().split('T')[0]!
-  );
+  const upcomingEvents = events.filter((e) => e.startDate > localToday);
 
   return (
     <div className="flex flex-col h-full">
@@ -256,7 +261,7 @@ export function CalendarPage() {
                 {formatDateRange(selectedDate, viewMode)}
               </h3>
               <button
-                onClick={() => setSelectedDate(new Date().toISOString().split('T')[0]!)}
+                onClick={() => setSelectedDate(localToday)}
                 className="px-2 py-1 text-sm text-primary hover:underline"
               >
                 Today
@@ -628,43 +633,61 @@ function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
 }
 
 // Helper functions
+//
+// These helpers take a LOCAL 'YYYY-MM-DD' calendar day (`selectedDate` always
+// comes from localDayString() or from navigateDate below) and must return one.
+// They used to parse with `new Date(dateString)` — UTC midnight — mutate with
+// LOCAL getters (getDay/getDate/getMonth) and re-serialize with toISOString()
+// (UTC). West of UTC the instant lands on the previous local evening, so the
+// weekday/month that gets read is the neighbouring day's: the week of Sunday
+// 2026-09-13 anchored to 2026-09-07, September's month view spanned
+// 2026-09-02..2026-10-01, and "next month" from 2026-10-01 landed on
+// 2026-10-31 — still October. Parsing local and serialising local closes the
+// basis on both ends; day mode keeps returning its input verbatim. (round 47)
+
+/** Parse a 'YYYY-MM-DD' calendar day as LOCAL midnight, never UTC midnight. */
+function parseLocalDay(date: string): Date {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+}
+
 function getViewStartDate(date: string, mode: 'day' | 'week' | 'month'): string {
-  const d = new Date(date);
+  const d = parseLocalDay(date);
   if (mode === 'day') return date;
   if (mode === 'week') {
     const day = d.getDay();
     d.setDate(d.getDate() - day);
-    return d.toISOString().split('T')[0]!;
+    return localDayString(d);
   }
   // month
   d.setDate(1);
-  return d.toISOString().split('T')[0]!;
+  return localDayString(d);
 }
 
 function getViewEndDate(date: string, mode: 'day' | 'week' | 'month'): string {
-  const d = new Date(date);
+  const d = parseLocalDay(date);
   if (mode === 'day') return date;
   if (mode === 'week') {
     const day = d.getDay();
     d.setDate(d.getDate() + (6 - day));
-    return d.toISOString().split('T')[0]!;
+    return localDayString(d);
   }
   // month
   d.setMonth(d.getMonth() + 1);
   d.setDate(0);
-  return d.toISOString().split('T')[0]!;
+  return localDayString(d);
 }
 
 function navigateDate(date: string, mode: 'day' | 'week' | 'month', direction: number): string {
-  const d = new Date(date);
+  const d = parseLocalDay(date);
   if (mode === 'day') d.setDate(d.getDate() + direction);
   else if (mode === 'week') d.setDate(d.getDate() + direction * 7);
   else d.setMonth(d.getMonth() + direction);
-  return d.toISOString().split('T')[0]!;
+  return localDayString(d);
 }
 
 function formatDateRange(date: string, mode: 'day' | 'week' | 'month'): string {
-  const d = new Date(date);
+  const d = parseLocalDay(date);
   const options: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' };
 
   if (mode === 'day') {
@@ -676,15 +699,18 @@ function formatDateRange(date: string, mode: 'day' | 'week' | 'month'): string {
     });
   }
   if (mode === 'week') {
-    const start = new Date(getViewStartDate(date, 'week'));
-    const end = new Date(getViewEndDate(date, 'week'));
+    const start = parseLocalDay(getViewStartDate(date, 'week'));
+    const end = parseLocalDay(getViewEndDate(date, 'week'));
     return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }
   return d.toLocaleDateString('en-US', options);
 }
 
 function formatDateHeader(date: string): string {
-  const d = new Date(date);
+  // `date` is a local calendar day; `new Date(dateString)` would be UTC midnight
+  // = 20:00 the previous local evening here, which made today's group read as
+  // yesterday and TOMORROW's group match the 'Today' label. (round 48)
+  const d = parseLocalDay(date);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

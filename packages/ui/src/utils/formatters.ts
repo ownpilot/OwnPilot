@@ -28,6 +28,38 @@ export function formatToolName(name: string): string {
   return base.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * The *local* calendar day of `date` as a 'YYYY-MM-DD' string.
+ *
+ * Use this instead of `toISOString().split('T')[0]` whenever the value must
+ * mean "today for the user". `toISOString()` reports the UTC day, which is a
+ * different calendar day than local for every non-UTC timezone: east of UTC it
+ * still reads yesterday until 00:00-01:00+ local, and west of UTC it is already
+ * tomorrow during the local evening. Stored calendar days (task due dates,
+ * event start dates) are local, so comparisons against them must be local too.
+ *
+ * Zero-padded, so plain string `<` / `>` / `===` compare chronologically.
+ */
+export function localDayString(date: Date = new Date()): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+/**
+ * Inverse of localDayString(): parse a 'YYYY-MM-DD' calendar day as LOCAL
+ * midnight. `new Date('YYYY-MM-DD')` is UTC midnight — the previous local
+ * evening west of UTC — so formatting or reading it with local accessors lands
+ * one day early (an expense stored 2026-09-13 renders "9/12/2026" in New York).
+ * Use this whenever a stored day string must be displayed with local formatters.
+ */
+export function parseLocalDay(date: string): Date {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+}
+
 export function formatBytes(bytes: number, decimals = 1): string {
   if (bytes === 0) return '0 B';
   const k = 1024;
