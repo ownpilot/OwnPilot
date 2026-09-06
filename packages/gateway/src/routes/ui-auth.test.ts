@@ -4,12 +4,15 @@ import { uiAuthRoutes } from './ui-auth.js';
 import { requestId } from '../middleware/request-id.js';
 
 // Use vi.hoisted so mocks are available at vi.mock evaluation time
-const { mockCheck, mockRecordFailure, mockRecordSuccess, mockEmit } = vi.hoisted(() => ({
-  mockCheck: vi.fn(),
-  mockRecordFailure: vi.fn(),
-  mockRecordSuccess: vi.fn(),
-  mockEmit: vi.fn(),
-}));
+const { mockCheck, mockIsLockedOut, mockRecordFailure, mockRecordSuccess, mockEmit } = vi.hoisted(
+  () => ({
+    mockCheck: vi.fn(),
+    mockIsLockedOut: vi.fn(() => false),
+    mockRecordFailure: vi.fn(),
+    mockRecordSuccess: vi.fn(),
+    mockEmit: vi.fn(),
+  })
+);
 
 // Mock the ui-session service
 vi.mock('../services/ui-session.js', () => ({
@@ -37,6 +40,7 @@ vi.mock('./helpers.js', async (importOriginal) => {
 vi.mock('../utils/login-throttle.js', () => ({
   createLoginThrottle: vi.fn(() => ({
     check: mockCheck,
+    isLockedOut: mockIsLockedOut,
     recordFailure: mockRecordFailure,
     recordSuccess: mockRecordSuccess,
   })),
@@ -155,6 +159,48 @@ describe('UI Auth Routes', () => {
         headers: { 'Content-Type': 'application/json' },
       });
       expect(res.status).toBe(403);
+    });
+
+    // Round 43: a failed login must consume exactly ONE throttle attempt.
+    // check() is a consuming gate, so the audit-only `lockedOut` field must be
+    // read through isLockedOut(); using !check().allowed there spent a second
+    // token and locked users out early (maxAttempts 5 -> ~2 served attempts).
+    it('consumes one throttle attempt on a failed login and reads lockout without consuming', async () => {
+      mockIsPasswordConfigured.mockReturnValue(true);
+      mockGetPasswordHash.mockReturnValue('salt:correct-hashed');
+      mockCheck.mockReturnValue({ allowed: true });
+      mockIsLockedOut.mockReturnValue(false);
+
+      const res = await app.request('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ password: 'wrong' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      expect(res.status).toBe(403);
+
+      // Exactly one check() = the gate. A second call would mean the audit
+      // diagnostic is spending a login attempt again.
+      expect(mockCheck).toHaveBeenCalledTimes(1);
+      expect(mockRecordFailure).toHaveBeenCalledTimes(1);
+      expect(mockIsLockedOut).toHaveBeenCalledTimes(1);
+    });
+
+    it('still reports a genuine lockout in the audit payload', async () => {
+      mockIsPasswordConfigured.mockReturnValue(true);
+      mockGetPasswordHash.mockReturnValue('salt:correct-hashed');
+      mockCheck.mockReturnValue({ allowed: true });
+      mockIsLockedOut.mockReturnValue(true);
+
+      const res = await app.request('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ password: 'wrong' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+      expect(res.status).toBe(403);
+
+      const failed = mockEmit.mock.calls.find(([, , payload]) => payload?.lockedOut !== undefined);
+      expect(failed).toBeDefined();
+      expect(failed![2].lockedOut).toBe(true);
     });
 
     it('returns 400 when password is missing', async () => {

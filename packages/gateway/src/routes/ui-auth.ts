@@ -117,7 +117,7 @@ uiAuthRoutes.post('/login', async (c) => {
     getEventSystem().emit('audit.auth.loginFailed', 'ui-auth', {
       ip: clientIp,
       attempts: 1,
-      lockedOut: !loginThrottle.check(clientIp).allowed,
+      lockedOut: loginThrottle.isLockedOut(clientIp),
     });
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid password' }, 403);
   }
