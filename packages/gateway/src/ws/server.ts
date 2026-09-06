@@ -403,6 +403,12 @@ export class WSGateway {
           return;
         }
 
+        // Both accept-path gates (login throttle + auth) have now passed for
+        // this request. Mark it so handleConnection — re-entered below via the
+        // 'connection' emit carrying this same object — does not run them a
+        // second time and spend another login-throttle attempt (round 45).
+        this.admittedRequests.add(request);
+
         this.wss!.handleUpgrade(request, socket, head, (ws) => {
           this.wss!.emit('connection', ws, request);
         });
@@ -460,6 +466,22 @@ export class WSGateway {
   }
 
   /**
+   * Requests whose accept-path gates (login throttle + auth) already passed in
+   * the attachToServer upgrade handler.
+   *
+   * handleConnection is the single accept funnel for BOTH modes:
+   *   - standalone (start()): the ws library hands connections over directly, so
+   *     the gates must run there.
+   *   - attachToServer(): the upgrade handler gates the request BEFORE
+   *     handleUpgrade(), then re-emits 'connection' with that SAME IncomingMessage.
+   * Without this marker the gates ran twice per connection, spending a second
+   * wsLoginThrottle attempt — so maxAttempts=10 admitted only 5 connections per
+   * minute per IP (round 45). WeakSet keyed by the request object: entries vanish
+   * with it, nothing accumulates.
+   */
+  private readonly admittedRequests = new WeakSet<IncomingMessage>();
+
+  /**
    * Handle new WebSocket connection
    */
   private async handleConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
@@ -481,21 +503,26 @@ export class WSGateway {
       return;
     }
 
-    // Rate limit auth attempts per IP
-    const clientIp = request.socket.remoteAddress ?? 'unknown';
-    if (!wsLoginThrottle.check(clientIp).allowed) {
-      log.warn('WebSocket auth rate limited', { clientIp });
-      socket.close(1008, 'Rate limited');
-      return;
-    }
+    // Accept-path gates: rate limit + auth. In attachToServer mode the upgrade
+    // handler already ran BOTH for this exact request before handleUpgrade(), so
+    // re-running them here spent a second login-throttle attempt per connection
+    // (halving wsLoginThrottle's effective budget). Standalone connections are
+    // never marked, so they still run both gates here as the sole funnel.
+    if (!this.admittedRequests.has(request)) {
+      const clientIp = request.socket.remoteAddress ?? 'unknown';
+      if (!wsLoginThrottle.check(clientIp).allowed) {
+        log.warn('WebSocket auth rate limited', { clientIp });
+        socket.close(1008, 'Rate limited');
+        return;
+      }
 
-    // Authenticate (standalone mode — upgrade handler already checks for attachToServer mode)
-    const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
-    const auth = getWsAuth(request, url);
-    if (!(await validateWsAuth(auth))) {
-      log.warn('Connection rejected: invalid or missing token');
-      socket.close(1008, 'Authentication required');
-      return;
+      const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
+      const auth = getWsAuth(request, url);
+      if (!(await validateWsAuth(auth))) {
+        log.warn('Connection rejected: invalid or missing token');
+        socket.close(1008, 'Authentication required');
+        return;
+      }
     }
 
     // Create session
