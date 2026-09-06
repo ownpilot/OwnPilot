@@ -11,6 +11,7 @@ import { useWizardKeyboard } from '../../components/wizard';
 import { goalsApi } from '../../api';
 import { AlertTriangle, Target, Plus, Trash, Sparkles } from '../../components/icons';
 import { aiGenerate, extractJsonArray } from './ai-helper';
+import { localDayString } from '../../utils/formatters';
 
 interface Props {
   onComplete: () => void;
@@ -285,7 +286,11 @@ Return ONLY the JSON array, nothing else.`;
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                // localDayString(), not toISOString(): the UTC day is already
+                // TOMORROW during a local evening west of UTC, which would set
+                // min to the next day and make today unpickable (browsers reject
+                // a date value below min via rangeUnderflow). (round 50)
+                min={localDayString()}
                 className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
