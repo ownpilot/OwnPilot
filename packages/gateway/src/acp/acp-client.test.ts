@@ -40,8 +40,8 @@ const mockAgent = {
   }),
   newSession: vi.fn().mockResolvedValue({
     sessionId: 'acp-ses-1',
-    availableModes: [{ id: 'code' }, { id: 'ask' }],
-    currentMode: { id: 'code' },
+    // ACP 1.x: mode state moved into NewSessionResponse.modes (SessionModeState)
+    modes: { currentModeId: 'code', availableModes: [{ id: 'code' }, { id: 'ask' }] },
     configOptions: [],
   }),
   prompt: vi.fn().mockResolvedValue({
@@ -195,7 +195,8 @@ describe('AcpClient', () => {
       expect(sessionId).toBe('acp-ses-1');
       expect(mockAgent.newSession).toHaveBeenCalledWith({
         cwd: '/home/user/project',
-        mcpServers: undefined,
+        // ACP 1.x: mcpServers is a required (possibly empty) array
+        mcpServers: [],
       });
     });
 

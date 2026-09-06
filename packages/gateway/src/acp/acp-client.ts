@@ -203,7 +203,8 @@ export class AcpClient {
 
     const response = await this.agent.newSession({
       cwd: options?.cwd ?? this.options.cwd,
-      mcpServers: mcpServers.length > 0 ? mcpServers : undefined,
+      // ACP 1.x: mcpServers is a required (possibly empty) array.
+      mcpServers,
     });
 
     const sessionId = response.sessionId;
@@ -211,9 +212,11 @@ export class AcpClient {
       acpSessionId: sessionId,
       ownerSessionId: this.options.ownerSessionId,
       connectionState: 'ready',
-      availableModes: response.availableModes,
-      currentMode: response.currentMode?.id,
-      configOptions: response.configOptions,
+      // ACP 1.x: mode state moved into NewSessionResponse.modes (SessionModeState).
+      availableModes: response.modes?.availableModes,
+      currentMode: response.modes?.currentModeId,
+      // configOptions is now `| null` as well as optional; normalize for the session state.
+      configOptions: response.configOptions ?? undefined,
       agentInfo: this.session?.agentInfo,
       protocolVersion: this.session?.protocolVersion,
     };
@@ -223,7 +226,7 @@ export class AcpClient {
     log.info(`ACP session created`, {
       acpSessionId: sessionId,
       ownerSessionId: this.options.ownerSessionId,
-      modes: response.availableModes?.map((m: { id: string }) => m.id),
+      modes: response.modes?.availableModes?.map((m: { id: string }) => m.id),
     });
 
     return sessionId;
@@ -376,7 +379,8 @@ export class AcpClient {
 
     const response = await this.agent.initialize({
       protocolVersion: PROTOCOL_VERSION,
-      capabilities: {
+      // ACP 1.x: `capabilities` renamed to `clientCapabilities` on InitializeRequest.
+      clientCapabilities: {
         fs: {
           readTextFile: true,
           writeTextFile: true,
@@ -398,7 +402,9 @@ export class AcpClient {
         ? {
             name: response.agentInfo.name,
             version: response.agentInfo.version,
-            title: response.agentInfo.title,
+            // ACP 1.x: Implementation.title is `string | null | undefined`; the
+            // session state expects `string | undefined` — normalize null away.
+            title: response.agentInfo.title ?? undefined,
           }
         : undefined,
       protocolVersion: response.protocolVersion,
@@ -412,10 +418,11 @@ export class AcpClient {
     });
 
     // Handle authentication if required
-    if (response.authMethods && response.authMethods.length > 0) {
-      const method = response.authMethods[0];
-      log.info(`Agent requires auth, using method: ${method.id}`);
-      await this.agent.authenticate({ methodId: method.id });
+    // noUncheckedIndexedAccess: authMethods[0] is AuthMethod | undefined — narrow before use.
+    const authMethod = response.authMethods?.[0];
+    if (authMethod) {
+      log.info(`Agent requires auth, using method: ${authMethod.id}`);
+      await this.agent.authenticate({ methodId: authMethod.id });
     }
 
     this.setState('ready');
