@@ -57,6 +57,27 @@ describe('chat content cleanup', () => {
       'Answer'
     );
   });
+
+  it('hides incomplete widgets after multi-unit-lowercase prose (round 65)', () => {
+    // Turkish 'İ' lowercases to TWO code units ('i̇'), so tag positions
+    // computed on a lowercased copy drifted past the start of the later
+    // incomplete <callout> tag, leaking it into the visible stream.
+    const content = 'İİ Ok <metric data=\'{"v":1}\'></metric>\n<callout data=\'{"t":1}';
+    const result = hideIncompleteStreamingWidgets(content);
+    expect(result).not.toContain('<callout');
+    expect(result).toContain('<metric data=\'{"v":1}\'></metric>');
+  });
+
+  it('CONTROL: ASCII prose with the same structure truncates normally (round 65)', () => {
+    const content = 'AA Ok <metric data=\'{"v":1}\'></metric>\n<callout data=\'{"t":1}';
+    const result = hideIncompleteStreamingWidgets(content);
+    expect(result).not.toContain('<callout');
+  });
+
+  it('CONTROL: a complete widget after Turkish prose is preserved (round 65)', () => {
+    const content = 'İİ Ok <metric data=\'{"v":1}\'></metric>';
+    expect(hideIncompleteStreamingWidgets(content)).toBe(content);
+  });
 });
 
 describe('parseMarkers', () => {

@@ -51,7 +51,6 @@ export function hideIncompleteStreamingWidgets(content: string): string {
   let inCodeFence = false;
   let index = 0;
   let pendingWidgetStart = -1;
-  const lowerContent = content.toLowerCase();
 
   while (index < content.length) {
     if (content.startsWith('```', index)) {
@@ -67,7 +66,13 @@ export function hideIncompleteStreamingWidgets(content: string): string {
         const searchFrom = index + tagStart[0].length;
         const selfClosingAt = content.indexOf('/>', searchFrom);
         const closingTag = `</${tagName}>`;
-        const closingAt = lowerContent.indexOf(closingTag, searchFrom);
+        // Case-insensitive searches on the ORIGINAL string: computing indices
+        // on a lowercased copy drifts whenever a character lowercases to
+        // multiple code units (Turkish 'İ' → 'i̇', 2 units), which made the
+        // scanner skip past the start of a later incomplete widget and leak
+        // the raw half-tag into the visible stream. (round 65)
+        const closingMatch = content.slice(searchFrom).match(new RegExp(`</${tagName}>`, 'i'));
+        const closingAt = closingMatch ? searchFrom + closingMatch.index! : -1;
         const completionStart =
           selfClosingAt === -1
             ? closingAt
@@ -82,8 +87,11 @@ export function hideIncompleteStreamingWidgets(content: string): string {
               : selfClosingAt + 2;
         let nextWidgetAt = -1;
 
-        for (const tagName of CHAT_WIDGET_TAG_NAMES) {
-          const candidate = lowerContent.indexOf(`<${tagName}`, index + tagStart[0].length);
+        for (const widgetName of CHAT_WIDGET_TAG_NAMES) {
+          const m = content
+            .slice(index + tagStart[0].length)
+            .match(new RegExp(`<${widgetName}`, 'i'));
+          const candidate = m ? index + tagStart[0].length + m.index! : -1;
           if (candidate !== -1 && (nextWidgetAt === -1 || candidate < nextWidgetAt)) {
             nextWidgetAt = candidate;
           }
