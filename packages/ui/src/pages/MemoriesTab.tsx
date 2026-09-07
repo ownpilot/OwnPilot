@@ -79,6 +79,7 @@ export function MemoriesTab({ memories, onMemoriesChange, onLoadAllData }: Memor
     if (pendingDeleteRef.current) {
       clearTimeout(pendingDeleteRef.current);
       pendingDeleteRef.current = null;
+      onLoadAllData();
     }
 
     const deletedIds = new Set(ids);
