@@ -200,6 +200,7 @@ export class ConversationMemoryStore {
    * Archive a memory
    */
   async archiveMemory(id: string): Promise<boolean> {
+    await this.ensureInitialized();
     const memory = this.memories.get(id);
     if (!memory) return false;
 
@@ -214,6 +215,7 @@ export class ConversationMemoryStore {
    * Restore an archived memory
    */
   async restoreMemory(id: string): Promise<boolean> {
+    await this.ensureInitialized();
     const memory = this.memories.get(id);
     if (!memory) return false;
 
