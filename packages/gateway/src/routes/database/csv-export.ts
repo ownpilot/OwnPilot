@@ -152,6 +152,17 @@ function escapeCsvValue(value: unknown): string {
   if (typeof value === 'object') {
     str = JSON.stringify(value);
   }
+  // Neutralize spreadsheet formula injection (CWE-1236 / OWASP CSV
+  // Injection): cells beginning with = + - @ TAB or CR are evaluated as
+  // formulas/DDE when the export is opened in Excel, LibreOffice, or Sheets.
+  // User-controlled columns (note content, bookmark titles, descriptions,
+  // ...) reach this function verbatim, so prefix a single apostrophe — the
+  // same guard Excel itself uses. Export-side only, and idempotent: a value
+  // that already starts with "'" is left alone, so re-exports never stack
+  // prefixes (the import parser does not strip it — accepted OWASP trade-off).
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
   // Escape quotes by doubling them
   str = str.replace(/"/g, '""');
   // Wrap in quotes if contains special chars
@@ -334,9 +345,13 @@ csvExportRoutes.post('/import/csv/:table', async (c) => {
     }
 
     const csvContent = await c.req.text();
-    const lines = csvContent.split('\n').filter((line) => line.trim());
+    // Quote-aware parse of the WHOLE content: cells may contain quoted
+    // newlines (the exporter wraps any value holding '\n' in quotes), so
+    // splitting on '\n' first tears one logical row into several bogus ones
+    // and corrupts the data on every export → import round trip (round 57).
+    const parsedRows = parseCsvRows(csvContent);
 
-    if (lines.length < 2) {
+    if (parsedRows.length < 2) {
       return apiError(
         c,
         {
@@ -348,8 +363,7 @@ csvExportRoutes.post('/import/csv/:table', async (c) => {
     }
 
     // Parse header
-    const headerLine = lines[0];
-    const rawHeaders = parseCsvLine(headerLine ?? '');
+    const rawHeaders = parsedRows[0] ?? [];
 
     // Plan 11 CSV-001: validate every header against the SQL identifier
     // allowlist (^[a-z_][a-z0-9_]*$). quoteIdentifier below would otherwise
@@ -374,17 +388,24 @@ csvExportRoutes.post('/import/csv/:table', async (c) => {
     }
 
     const tableColumns = CSV_TABLES[tableName];
-    const columns = tableColumns ? tableColumns.filter((col) => headers.includes(col)) : headers;
+    // The file's header order is arbitrary (spreadsheet edits reorder
+    // columns), so each table column must be mapped to its position in the
+    // FILE's header row. Pairing canonical-order columns[j] with file-order
+    // values[j] silently assigned values to the wrong columns on every
+    // reordered import (round 59).
+    const headerIndex = new Map<string, number>();
+    headers.forEach((name, index) => headerIndex.set(name, index));
+    const columns = tableColumns ? tableColumns.filter((col) => headerIndex.has(col)) : headers;
 
     // Parse rows
     const rows: Record<string, unknown>[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const values = parseCsvLine(lines[i] ?? '');
+    for (let i = 1; i < parsedRows.length; i++) {
+      const values = parsedRows[i] ?? [];
       const row: Record<string, unknown> = {};
-      for (let j = 0; j < columns.length && j < values.length; j++) {
-        const col = columns[j];
-        if (!col) continue;
-        let val: unknown = values[j];
+      for (const col of columns) {
+        const index = headerIndex.get(col);
+        if (index === undefined) continue;
+        let val: unknown = values[index];
         // Try to parse JSON if looks like array/object
         if (typeof val === 'string') {
           if (val.startsWith('[') || val.startsWith('{')) {
@@ -412,7 +433,14 @@ csvExportRoutes.post('/import/csv/:table', async (c) => {
         const rawColumns = Object.keys(row).filter(
           (k) => row[k] !== '' && row[k] !== null && row[k] !== undefined
         );
-        if (rawColumns.length === 0) continue;
+        // A row whose only non-empty column is the upsert key 'id' carries no
+        // data: filtering 'id' out of the DO UPDATE SET assignments would emit
+        // `ON CONFLICT ("id") DO UPDATE SET ` with a dangling empty SET clause
+        // — invalid SQL that the per-row catch silently swallowed as errors++
+        // (round 58). Skip it like a fully empty row.
+        if (rawColumns.length === 0 || (rawColumns.length === 1 && rawColumns[0] === 'id')) {
+          continue;
+        }
 
         const validColumns = rawColumns;
         const validValues = validColumns.map((col) => row[col]);
@@ -448,20 +476,34 @@ csvExportRoutes.post('/import/csv/:table', async (c) => {
 });
 
 /**
- * Parse a single CSV line handling quoted values
+ * Parse CSV content into rows, handling quoted values AND quoted newlines:
+ * a cell wrapped in quotes may contain commas and line breaks (the exporter
+ * emits exactly that), so row/cell boundaries are only recognized outside
+ * quotes. Rows whose cells are all empty are dropped, matching the previous
+ * blank-line filtering. CRLF terminators are handled; a CR outside quotes is
+ * treated as filler.
  */
-function parseCsvLine(line: string): string[] {
-  const result: string[] = [];
+function parseCsvRows(csv: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
   let current = '';
   let inQuotes = false;
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const nextChar = line[i + 1];
+  const endCell = () => {
+    row.push(current.trim());
+    current = '';
+  };
+  const endRow = () => {
+    endCell();
+    if (row.some((cell) => cell !== '')) rows.push(row);
+    row = [];
+  };
 
+  for (let i = 0; i < csv.length; i++) {
+    const char = csv[i];
     if (inQuotes) {
       if (char === '"') {
-        if (nextChar === '"') {
+        if (csv[i + 1] === '"') {
           current += '"';
           i++; // Skip next quote
         } else {
@@ -470,18 +512,18 @@ function parseCsvLine(line: string): string[] {
       } else {
         current += char;
       }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
+      endCell();
+    } else if (char === '\n') {
+      endRow();
+    } else if (char === '\r') {
+      // CRLF: the \n branch ends the row; a lone CR outside quotes is filler
     } else {
-      if (char === '"') {
-        inQuotes = true;
-      } else if (char === ',') {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
+      current += char;
     }
   }
-
-  result.push(current.trim());
-  return result;
+  if (current !== '' || row.length > 0) endRow();
+  return rows;
 }

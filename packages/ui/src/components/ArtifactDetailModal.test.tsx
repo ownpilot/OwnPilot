@@ -7,6 +7,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ArtifactDetailModal, sanitizeArtifactForNewTab } from './ArtifactDetailModal';
 import type { Artifact } from '../api/endpoints/artifacts';
 
+/** Re-parse sanitizer output so assertions can inspect the emitted DOM. */
+function parse(html: string): Document {
+  return new DOMParser().parseFromString(html, 'text/html');
+}
+
 vi.mock('./ArtifactRenderer', () => ({
   ArtifactRenderer: () => <div data-testid="artifact-renderer" />,
 }));
@@ -352,5 +357,129 @@ describe('sanitizeArtifactForNewTab', () => {
     const out = sanitizeArtifactForNewTab('<script>alert(1)</script>', 'html');
     expect(out).toBe('');
     (globalThis as Record<string, unknown>).DOMParser = originalParser;
+  });
+
+  // Round 60 bypass regressions: the sanitizer previously missed (a) schemes
+  // smuggled with TAB/LF/CR characters — browsers strip those from URLs
+  // before scheme parsing, so "java\tscript:…" executes while never matching
+  // a naive prefix test — (b) URL attributes outside {href, src, xlink:href},
+  // and (c) iframes that render same-origin nested documents un-sandboxed.
+
+  it('strips javascript: URLs smuggled with control characters', () => {
+    const out = sanitizeArtifactForNewTab('<a href="java&#9;script:alert(1)">click</a>', 'html');
+    const doc = new DOMParser().parseFromString(out, 'text/html');
+    const dangerous = Array.from(doc.querySelectorAll('a[href]')).filter((a) =>
+      /^\s*(?:javascript|data):/i.test((a.getAttribute('href') ?? '').replace(/[\t\n\r]/g, ''))
+    );
+    expect(dangerous).toHaveLength(0);
+  });
+
+  it('strips javascript: URLs from form action attributes', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<form action="javascript:alert(1)"><input type="submit" value="go"></form>',
+      'html'
+    );
+    const doc = new DOMParser().parseFromString(out, 'text/html');
+    expect(doc.querySelectorAll('[action]').length).toBe(0);
+  });
+
+  it('emits every iframe with a script-blocking sandbox', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<iframe srcdoc="<script>alert(1)</script>"></iframe>',
+      'html'
+    );
+    const doc = new DOMParser().parseFromString(out, 'text/html');
+    const iframes = Array.from(doc.querySelectorAll('iframe'));
+    expect(iframes.length).toBe(1);
+    for (const frame of iframes) {
+      expect(frame.hasAttribute('sandbox')).toBe(true);
+      expect((frame.getAttribute('sandbox') ?? '').split(/\s+/)).not.toContain('allow-scripts');
+    }
+  });
+
+  it('still preserves benign markup and https links (round 60 CONTROL)', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<p style="color:red">Hello</p><a href="https://example.com">link</a>',
+      'html'
+    );
+    expect(out).toContain('Hello');
+    expect(out).toContain('https://example.com');
+  });
+
+  // Round 61 bypass regression: SMIL <animate>/<set> re-target attributes at
+  // RUNTIME — inside an <a>, <animate attributeName="href"
+  // values="javascript:…"/> rewrites the link to a scripting URL after static
+  // attribute stripping, so clicking executes same-origin script. They are
+  // now removed entirely (SMIL animation is non-essential to a preview).
+
+  it('removes SMIL <animate> elements targeting href with javascript: values', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<svg xmlns="http://www.w3.org/2000/svg"><a href="#"><circle r="5"/><animate attributeName="href" values="javascript:alert(1)" dur="1s" repeatCount="indefinite"/></a></svg>',
+      'svg'
+    );
+    expect(out).toContain('<circle');
+    expect(out).not.toContain('<animate');
+    expect(out).not.toContain('javascript:alert(1)');
+  });
+
+  it('removes SMIL <animate> in HTML mode (attributeName case-folded)', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<a href="#"><animate attributeName="href" to="javascript:alert(1)" dur="1s"/></a>',
+      'html'
+    );
+    expect(out).not.toContain('<animate');
+    expect(out).not.toContain('javascript:alert(1)');
+  });
+
+  it('removes SMIL <set> elements targeting xlink:href', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<a href="#"><set attributeName="xlink:href" to="javascript:alert(1)" dur="1s"/></a>',
+      'html'
+    );
+    expect(out).not.toContain('<set');
+    expect(out).not.toContain('javascript:alert(1)');
+  });
+
+  it('CONTROL: static SVG shapes are preserved (true before and after)', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<svg xmlns="http://www.w3.org/2000/svg"><circle r="5"/><rect width="4" height="4"/></svg>',
+      'svg'
+    );
+    expect(out).toContain('<circle');
+    expect(out).toContain('<rect');
+  });
+
+  // Round 62 bypass regression: <meta http-equiv="refresh"> placed in the
+  // BODY survives the doc.body.innerHTML export (the HTML parser keeps
+  // mid-document metas in body), and the blob document then force-navigates
+  // to any URL the instant it opens — a phishing primitive from a
+  // trusted-looking blob:https://app/… context. http-equiv metas are now
+  // removed; charset metas (no http-equiv) are preserved.
+
+  it('removes a body-position <meta http-equiv="refresh"> (forced-navigation primitive)', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<p>Hello</p><meta http-equiv="refresh" content="0;url=https://evil.example/steal">',
+      'html'
+    );
+    expect(parse(out).querySelectorAll('meta[http-equiv]').length).toBe(0);
+    expect(out).not.toContain('http-equiv');
+    expect(out).not.toContain('evil.example');
+    expect(out).toContain('Hello');
+  });
+
+  it('removes a refresh meta even when its target is a script scheme', () => {
+    const out = sanitizeArtifactForNewTab(
+      '<p>Hello</p><meta http-equiv="refresh" content="0;url=javascript:alert(1)">',
+      'html'
+    );
+    expect(parse(out).querySelectorAll('meta[http-equiv]').length).toBe(0);
+    expect(out).not.toContain('alert(1)');
+  });
+
+  it('CONTROL: a plain charset meta (no http-equiv) is preserved (true before and after)', () => {
+    const out = sanitizeArtifactForNewTab('<p>A</p><meta charset="utf-8">', 'html');
+    expect(parse(out).querySelectorAll('meta[charset]').length).toBe(1);
+    expect(out).not.toContain('http-equiv');
+    expect(out).toContain('A');
   });
 });

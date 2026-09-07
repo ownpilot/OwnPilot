@@ -273,4 +273,72 @@ describe('Expenses Routes', () => {
       expect(res.status).toBe(404);
     });
   });
+
+  describe('date format validation (round 63)', () => {
+    it('rejects a POST with a non-YYYY-MM-DD date', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 10, description: 'X', date: 'garbage' }),
+      });
+      expect(res.status).toBe(400);
+      expect(mockRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a POST with the wrong separator', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 10, description: 'X', date: '2026/03/15' }),
+      });
+      expect(res.status).toBe(400);
+      expect(mockRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a POST with a non-string date', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 10, description: 'X', date: 42 }),
+      });
+      expect(res.status).toBe(400);
+      expect(mockRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a PUT with a malformed date', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses/exp-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: 'not-a-date' }),
+      });
+      expect(res.status).toBe(400);
+      expect(mockRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('CONTROL: a valid date is created', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 10, description: 'X', date: '2026-03-15' }),
+      });
+      expect(res.status).toBe(201);
+    });
+
+    it('CONTROL: an absent date still gets the YYYY-MM-DD default', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 10, description: 'X' }),
+      });
+      expect(res.status).toBe(201);
+      const input = mockRepo.create.mock.calls[0]?.[0] as Record<string, unknown>;
+      expect(String(input.date)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
 });

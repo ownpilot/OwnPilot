@@ -5,6 +5,7 @@ import { useSkipHome } from '../hooks/useSkipHome';
 import { useDebouncedCallback } from '../hooks';
 import { goalsApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
+import { parseLocalDay } from '../utils/formatters';
 import type { Goal, GoalStep } from '../api';
 import {
   Target,
@@ -444,7 +445,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
 
           {goal.dueDate && (
             <p className="mt-2 text-xs text-text-muted dark:text-dark-text-muted">
-              Due: {new Date(goal.dueDate).toLocaleDateString()}
+              Due: {parseLocalDay(goal.dueDate).toLocaleDateString()}
             </p>
           )}
         </div>

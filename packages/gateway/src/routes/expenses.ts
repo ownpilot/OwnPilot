@@ -38,6 +38,11 @@ const VALID_CATEGORIES: readonly ExpenseCategory[] = [
   'other',
 ];
 
+// Canonical user-local calendar-day shape, mirroring DATE_REGEX in
+// middleware/schemas/productivity.ts. Validated at the boundary because the
+// stored string feeds every period window (computePeriodDates).
+const EXPENSE_DATE_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
+
 const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
   new Date(2000, i).toLocaleString('en-US', { month: 'long' })
 );
@@ -299,8 +304,32 @@ expensesRoutes.post('/', async (c) => {
       );
     }
 
+    // Reject malformed dates — `date` drives every period window
+    // (today/this_week/this_month compare stored strings against YYYY-MM-DD
+    // bounds), so a garbage value is stored raw and the expense becomes
+    // permanently invisible to all filtered views. Absent/null keeps the
+    // local-today fallback below. (round 63)
+    if (date != null && (typeof date !== 'string' || !EXPENSE_DATE_FORMAT.test(date))) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'date must be a YYYY-MM-DD string' },
+        400
+      );
+    }
+
+    // expense.date is a user-LOCAL calendar day — the UI form (round 49), the
+    // AI tool path (round 27) and this file's computePeriodDates windows all
+    // share that basis. The previous UTC fallback stamped an expense created
+    // without an explicit date onto the wrong local day: TOMORROW in UTC-
+    // zones during the local evening, YESTERDAY in UTC+ zones after local
+    // midnight (round 54).
+    const now = new Date();
+    const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+      now.getDate()
+    ).padStart(2, '0')}`;
+
     const expense = await repo.create({
-      date: (date as string) ?? new Date().toISOString().split('T')[0]!,
+      date: (date as string) ?? localToday,
       amount: amountNum,
       currency: (currency as string) ?? 'TRY',
       category: (category as string) ?? 'other',
@@ -347,6 +376,19 @@ expensesRoutes.put('/:id', async (c) => {
         );
       }
       updateFields.amount = amountNum;
+    }
+
+    // Reject malformed dates on update too (when present) — the stored
+    // string feeds every period window, same rule as create. (round 63)
+    if (
+      updateFields.date != null &&
+      (typeof updateFields.date !== 'string' || !EXPENSE_DATE_FORMAT.test(updateFields.date))
+    ) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'date must be a YYYY-MM-DD string' },
+        400
+      );
     }
 
     const updated = await repo.update(c.req.param('id'), updateFields);

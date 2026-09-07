@@ -52,10 +52,39 @@ export function sanitizeArtifactForNewTab(content: string, type: 'html' | 'svg')
   );
 
   // Remove script and foreignObject (the latter can smuggle HTML/script into an
-  // otherwise-SVG document) anywhere in the tree.
-  doc.querySelectorAll('script, foreignObject').forEach((node) => node.remove());
+  // otherwise-SVG document) anywhere in the tree. <animate>/<set> are removed
+  // too: SMIL re-targets attributes at RUNTIME — inside an <a>,
+  // <animate attributeName="href" values="javascript:…"/> rewrites the link to
+  // a scripting URL after static attribute stripping, so clicking executes
+  // script with the app's origin (round 61). <meta http-equiv=refresh> is
+  // removed as well: it force-navigates the blob document to any URL the
+  // instant it opens — a phishing primitive from a trusted-looking context,
+  // and body-position metas survive the body.innerHTML export (round 62).
+  doc
+    .querySelectorAll('script, foreignObject, animate, set, meta[http-equiv]')
+    .forEach((node) => node.remove());
 
-  // Strip event-handler attributes and javascript:/data: URLs from every node.
+  // Browsers strip TAB/LF/CR from URLs before scheme parsing, so a value like
+  // "java\tscript:alert(1)" executes even though it never matches a naive
+  // prefix test — detect the scheme on the stripped form (round 60).
+  const isDangerousUrl = (value: string): boolean =>
+    /^\s*(?:javascript|data):/i.test(value.replace(/[\t\n\r]/g, ''));
+
+  // Attributes a browser resolves as URLs and which can carry a scripting
+  // scheme. action/formaction/data/poster/background were previously missed —
+  // <form action="javascript:…"> executed on submit (round 60).
+  const URL_ATTRS = new Set([
+    'href',
+    'src',
+    'xlink:href',
+    'action',
+    'formaction',
+    'data',
+    'poster',
+    'background',
+  ]);
+
+  // Strip event-handler attributes and dangerous URLs from every node.
   doc.querySelectorAll('*').forEach((el) => {
     for (const attr of Array.from(el.attributes)) {
       const name = attr.name.toLowerCase();
@@ -63,12 +92,16 @@ export function sanitizeArtifactForNewTab(content: string, type: 'html' | 'svg')
         el.removeAttribute(attr.name);
         continue;
       }
-      if (
-        (name === 'href' || name === 'src' || name === 'xlink:href') &&
-        /^\s*(?:javascript|data):/i.test(attr.value)
-      ) {
+      if (URL_ATTRS.has(name) && isDangerousUrl(attr.value)) {
         el.removeAttribute(attr.name);
       }
+    }
+    // An <iframe> (with or without srcdoc) renders a same-origin nested
+    // document whose <script> would run with the app's origin — force the
+    // sandbox attribute to its most restrictive form so the preview stays
+    // but scripts are inert (round 60).
+    if (el.tagName.toLowerCase() === 'iframe') {
+      el.setAttribute('sandbox', '');
     }
   });
 
