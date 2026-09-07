@@ -235,6 +235,54 @@ describe('AgenticOrchestrator', () => {
     expect(report.summary).toBeDefined();
   });
 
+  it('does not leave a lingering timeout timer after a step completes', async () => {
+    // Regression: executeStepWithTimeout raced the dispatch against a plain
+    // setTimeout and never cleared it — a dead 60s (direct-LLM) / 600s (claw)
+    // timer stayed live in the event loop for every executed step.
+    const orchestrator = new AgenticOrchestrator();
+    const before = process.getActiveResourcesInfo().filter((r) => r === 'Timeout').length;
+
+    const report = await orchestrator.execute({
+      name: 'Quick explanation',
+      description: 'explain how event loops work',
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const after = process.getActiveResourcesInfo().filter((r) => r === 'Timeout').length;
+
+    expect(report.status).toBe('completed');
+    expect(after).toBe(before);
+  });
+
+  it('aborts a timed-out attempt so retries do not duplicate side effects', async () => {
+    // Regression: the timeout rejected the race but never aborted the losing
+    // dispatch — with a 120ms timeout and a 400ms side-effecting handler, all
+    // three retry attempts completed their side effect (three concurrent
+    // executions of the same step while the orchestrator reported failure).
+    let started = 0;
+    const sideEffects: number[] = [];
+    const orchestrator = new AgenticOrchestrator(undefined, async (_step, signal) => {
+      started += 1;
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      if (signal?.aborted) {
+        return { success: false, output: null, error: 'abandoned (aborted)' };
+      }
+      sideEffects.push(started);
+      return { success: true, output: `side-effect-${started}` };
+    });
+
+    const report = await orchestrator.execute({
+      name: 'Slow side effect',
+      description: 'explain how event loops work',
+      constraints: { timeoutMs: 120 },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    expect(['failed', 'escalated']).toContain(report.status);
+    expect(started).toBe(3); // retryOnFailure => 3 attempts
+    expect(sideEffects).toEqual([]); // every abandoned attempt was aborted
+  });
+
   it('supports cancel', async () => {
     const orchestrator = new AgenticOrchestrator();
     const report = await orchestrator.execute({

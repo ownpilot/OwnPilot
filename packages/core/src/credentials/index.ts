@@ -331,6 +331,17 @@ export class UserCredentialStore {
       },
     };
 
+    // A second store() for the same user+provider must REPLACE the existing
+    // credential: the backend's getByProvider() returns the FIRST (oldest)
+    // entry, so keeping the old entry would leave the STALE value active,
+    // make the id returned here point at a credential that is never served,
+    // and produce duplicate providers in list(). rotate() (which deletes only
+    // the oldest entry) cannot heal that state either.
+    const existing = await this.backend.getByProvider(userId, provider);
+    if (existing) {
+      await this.backend.delete(existing.id);
+    }
+
     // Store
     await this.backend.set(entry);
 

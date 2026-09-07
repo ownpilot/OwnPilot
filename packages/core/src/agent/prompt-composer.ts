@@ -163,18 +163,17 @@ Create **triggers** (recurring actions) and **plans** (multi-step workflows) via
 // =============================================================================
 
 /**
- * Get current time context
+ * Get current time context.
+ *
+ * Wall-clock fields (timeOfDay, dayOfWeek) describe the REQUESTED zone's
+ * clock, not the server's: the composed prompt renders "User's timezone: X"
+ * next to them, and a UTC server must not tell a New York user it is Sunday
+ * morning at 22:30 their Saturday. Derived via Intl in that zone; an invalid
+ * zone identifier falls back to the server clock and the fallback zone is
+ * reported instead of echoing the unusable input.
  */
 export function getTimeContext(timezone?: string): TimeContext {
   const now = new Date();
-  const hour = now.getHours();
-
-  let timeOfDay: TimeContext['timeOfDay'];
-  if (hour >= 5 && hour < 12) timeOfDay = 'morning';
-  else if (hour >= 12 && hour < 17) timeOfDay = 'afternoon';
-  else if (hour >= 17 && hour < 21) timeOfDay = 'evening';
-  else timeOfDay = 'night';
-
   const days = [
     'Sunday',
     'Monday',
@@ -184,11 +183,40 @@ export function getTimeContext(timezone?: string): TimeContext {
     'Friday',
     'Saturday',
   ] as const;
+  const serverZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const requestedZone = timezone ?? serverZone;
+
+  let hour: number;
+  let dayOfWeek: string;
+  let effectiveZone: string = requestedZone;
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: requestedZone,
+      hour: 'numeric',
+      hour12: false,
+      weekday: 'long',
+    }).formatToParts(now);
+    const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';
+    hour = parseInt(get('hour'), 10) % 24; // some ICU builds render midnight as '24'
+    dayOfWeek = get('weekday') || 'Unknown';
+  } catch {
+    // Unknown timezone identifier — fall back to the server clock and label
+    // the context with the zone actually used.
+    hour = now.getHours();
+    dayOfWeek = days[now.getDay()] ?? 'Unknown';
+    effectiveZone = serverZone;
+  }
+
+  let timeOfDay: TimeContext['timeOfDay'];
+  if (hour >= 5 && hour < 12) timeOfDay = 'morning';
+  else if (hour >= 12 && hour < 17) timeOfDay = 'afternoon';
+  else if (hour >= 17 && hour < 21) timeOfDay = 'evening';
+  else timeOfDay = 'night';
 
   return {
     currentTime: now,
-    timezone: timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-    dayOfWeek: days[now.getDay()] ?? 'Unknown',
+    timezone: effectiveZone,
+    dayOfWeek,
     timeOfDay,
   };
 }

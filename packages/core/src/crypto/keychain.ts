@@ -308,7 +308,18 @@ export async function deleteSecret(
       }
 
       case 'win32': {
-        await execFileAsync('cmdkey', [`/delete:${cfg.service}`]);
+        // storeSecret on win32 writes the DPAPI-protected secret to
+        // %LOCALAPPDATA%\OwnPilot\cred.dat (cmdkey cannot store or retrieve
+        // passwords), so deletion must remove that FILE. `cmdkey /delete:`
+        // only clears a Credential Manager entry this module never creates,
+        // which left the master key on disk after a successful "delete".
+        const credPath = `${process.env.LOCALAPPDATA || ''}\\OwnPilot\\cred.dat`;
+        try {
+          const { unlinkSync } = await import('node:fs');
+          unlinkSync(credPath);
+        } catch {
+          // best-effort — the file may not exist
+        }
         return ok(undefined);
       }
 

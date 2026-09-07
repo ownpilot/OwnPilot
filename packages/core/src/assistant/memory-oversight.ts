@@ -407,7 +407,11 @@ export function createMemoryOversightExecutors(
       };
 
       if (category) queryOptions.category = category;
-      if (importance) queryOptions.minImportance = importance;
+      // `importance` is intentionally NOT passed as queryOptions.minImportance:
+      // queryMemories keeps weight >= selected, while this tool's contract is
+      // AT-OR-BELOW (the local filter below). Passing both intersected to only
+      // the exact level, so e.g. { importance: 'medium' } silently left every
+      // low-importance memory behind while reporting success.
 
       const memories = await store.queryMemories(queryOptions);
 

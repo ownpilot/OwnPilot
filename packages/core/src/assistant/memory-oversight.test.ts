@@ -306,6 +306,22 @@ describe('bulk_delete_memories executor', () => {
     expect(store.deleteMemory).not.toHaveBeenCalledWith('hi');
   });
 
+  it('deletes at or below the selected importance (medium also deletes low)', async () => {
+    const low = makeMemoryEntry({ id: 'lo', importance: 'low' });
+    const med = makeMemoryEntry({ id: 'med', importance: 'medium' });
+    const high = makeMemoryEntry({ id: 'hi', importance: 'high' });
+    store.queryMemories.mockResolvedValue([low, med, high]);
+    await executors.bulk_delete_memories({ confirm: true, importance: 'medium' }, mockCtx);
+    // queryMemories must NOT re-filter by importance: minImportance is an
+    // at-or-ABOVE filter and would intersect with the at-or-below filter to
+    // only the exact level, silently leaving low entries behind.
+    const queryArg = store.queryMemories.mock.calls[0][0] as Record<string, unknown>;
+    expect(queryArg).not.toHaveProperty('minImportance');
+    expect(store.deleteMemory).toHaveBeenCalledWith('lo');
+    expect(store.deleteMemory).toHaveBeenCalledWith('med');
+    expect(store.deleteMemory).not.toHaveBeenCalledWith('hi');
+  });
+
   it('returns count of deleted memories in message', async () => {
     store.queryMemories.mockResolvedValue([makeMemoryEntry()]);
     const result = await executors.bulk_delete_memories({ confirm: true }, mockCtx);

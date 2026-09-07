@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { AgentInput, AgentResult } from './lifecycle.js';
 import { BaseAgentLifecycle } from './lifecycle.js';
 import type { AgentType } from './lifecycle.js';
@@ -86,5 +86,28 @@ describe('BaseAgentLifecycle', () => {
     const metrics1 = agent.getResourceUsage();
     expect(metrics1.tokensUsed).toBe(100);
     expect(metrics1.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('banks running time on pause and excludes the paused wall-clock from duration', () => {
+    vi.useFakeTimers();
+    try {
+      const agent = new TestAgent('test-7');
+      vi.setSystemTime(1_000_000);
+      agent.doTransition('running');
+      vi.advanceTimersByTime(60);
+      agent.doTransition('paused');
+      // While paused: the banked running time must stay visible and the
+      // paused wall-clock must not count.
+      expect(agent.getResourceUsage().durationMs).toBe(60);
+      vi.advanceTimersByTime(250);
+      agent.doTransition('running');
+      // After resume: only the banked 60ms counts; the 250ms pause is excluded.
+      expect(agent.getResourceUsage().durationMs).toBe(60);
+      vi.advanceTimersByTime(60);
+      agent.doTransition('completed');
+      expect(agent.getResourceUsage().durationMs).toBe(120);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

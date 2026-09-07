@@ -809,6 +809,24 @@ describe('UsageTracker', () => {
       expect(expensive[1]!.cost).toBeGreaterThanOrEqual(expensive[2]!.cost);
     });
 
+    it('does not mutate the store order observed by getUsage()', async () => {
+      // Regression: without startDate the query aliased this.records and
+      // sorted it in place, permanently reordering the tracker's shared
+      // chronological store — later getUsage()/exportUsage() calls saw
+      // cost order instead of insertion order.
+      await tracker.record(makeUsage({ inputTokens: 100, outputTokens: 50 }));
+      await tracker.record(makeUsage({ inputTokens: 10_000, outputTokens: 5_000 }));
+      await tracker.record(makeUsage({ inputTokens: 1_000, outputTokens: 500 }));
+
+      const before = (await tracker.getUsage()).map((m) => m.inputTokens);
+
+      const expensive = await tracker.getMostExpensiveRequests();
+      expect(expensive[0]!.cost).toBeGreaterThanOrEqual(expensive[expensive.length - 1]!.cost);
+
+      const after = (await tracker.getUsage()).map((m) => m.inputTokens);
+      expect(after).toEqual(before);
+    });
+
     it('respects limit parameter', async () => {
       for (let i = 0; i < 5; i++) {
         await tracker.record(makeUsage());

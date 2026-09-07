@@ -129,17 +129,25 @@ export abstract class BaseAgentLifecycle implements IAgentLifecycle {
     return { ...this._metrics };
   }
 
-  /** Transition to a new state with validation. */
+  /**
+   * Transition to a new state.
+   *
+   * The running-time window closes on ANY exit from `running` (pause,
+   * cancellation, completion), not just terminal states: leaving `_startedAt`
+   * set through a pause made reported duration include the paused wall-clock
+   * and hid the elapsed running time from getResourceUsage while paused.
+   * Resuming opens a fresh window, so only running time accumulates.
+   */
   protected transition(newState: UnifiedAgentState): void {
-    this._state = newState;
-    if (newState === 'running' && this._startedAt === null) {
-      this._startedAt = Date.now();
-    }
-    if (newState === 'completed' || newState === 'failed' || newState === 'cancelled') {
+    if (this._state === 'running' && newState !== 'running') {
       if (this._startedAt !== null) {
         this._metrics.durationMs += Date.now() - this._startedAt;
         this._startedAt = null;
       }
+    }
+    this._state = newState;
+    if (newState === 'running' && this._startedAt === null) {
+      this._startedAt = Date.now();
     }
   }
 

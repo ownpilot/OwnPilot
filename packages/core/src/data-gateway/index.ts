@@ -589,11 +589,23 @@ export class DataGateway {
   ): Promise<PersonalCalendarEvent[]> {
     return this.access(agentId, 'calendar', 'list', async () => {
       let events = await this.calendar.list();
-      if (filter?.startDate) {
-        events = events.filter((e) => e.startTime >= filter.startDate!);
-      }
-      if (filter?.endDate) {
-        events = events.filter((e) => e.startTime <= filter.endDate!);
+      if (filter?.startDate || filter?.endDate) {
+        // Compare UTC calendar DAYS, not raw timestamp strings: a
+        // day-granularity bound ('2026-09-06') must include timed events on
+        // that day, but '2026-09-06T10:00:00.000Z' is lexicographically
+        // GREATER than the bare date string and would fail a raw-string
+        // <= endDate comparison — silently dropping every timed same-day
+        // event. Truncating both sides to their day (first 10 chars of the
+        // ISO value) makes day- and full-ISO-granularity bounds behave the
+        // same and keeps bare-date all-day events comparable.
+        const startDay = filter.startDate?.slice(0, 10);
+        const endDay = filter.endDate?.slice(0, 10);
+        events = events.filter((e) => {
+          const day = e.startTime.slice(0, 10);
+          if (startDay && day < startDay) return false;
+          if (endDay && day > endDay) return false;
+          return true;
+        });
       }
       if (filter?.category) {
         events = events.filter((e) => e.category === filter.category);

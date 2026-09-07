@@ -350,6 +350,19 @@ describe('deleteSecret platform-specific', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('unlinks the win32 cred.dat file that storeSecret wrote', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    const result = await deleteSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+    // deleteSecret must remove the DPAPI-protected file storeSecret writes —
+    // `cmdkey /delete:` only clears a Credential Manager entry this module
+    // never creates, which left the master key on disk after a "successful"
+    // delete.
+    expect(mockUnlinkSync).toHaveBeenCalledWith(
+      `${process.env.LOCALAPPDATA ?? ''}\\OwnPilot\\cred.dat`
+    );
+  });
+
   it('handles linux delete failure gracefully', async () => {
     vi.mocked(osMock.platform).mockReturnValue('linux');
     asyncMock.mockRejectedValueOnce(new Error('secret not found'));
@@ -359,9 +372,14 @@ describe('deleteSecret platform-specific', () => {
 
   it('handles win32 delete failure gracefully', async () => {
     vi.mocked(osMock.platform).mockReturnValue('win32');
-    asyncMock.mockRejectedValueOnce(new Error('credential not found'));
+    // win32 deleteSecret is best-effort fs (unlinkSync) — it no longer shells
+    // out via asyncMock, and an unlink failure must still resolve ok.
+    mockUnlinkSync.mockImplementationOnce(() => {
+      throw new Error('EPERM');
+    });
     const result = await deleteSecret({ service: 'test', account: 'test' });
     expect(result.ok).toBe(true);
+    expect(mockUnlinkSync).toHaveBeenCalledTimes(1);
   });
 });
 

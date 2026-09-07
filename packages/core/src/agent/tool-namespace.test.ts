@@ -6,6 +6,7 @@ import {
   isQualifiedName,
   sanitizeToolName,
   desanitizeToolName,
+  normalizeToolArguments,
   UNPREFIXED_META_TOOLS,
 } from './tool-namespace.js';
 
@@ -197,6 +198,40 @@ describe('tool-namespace', () => {
     it('handles names starting or ending with dot', () => {
       expect(sanitizeToolName('.leading')).toBe('__leading');
       expect(sanitizeToolName('trailing.')).toBe('trailing__');
+    });
+  });
+
+  describe('normalizeToolArguments', () => {
+    it('coerces empty and malformed JSON to {}', () => {
+      expect(normalizeToolArguments('')).toBe('{}');
+      expect(normalizeToolArguments('   ')).toBe('{}');
+      expect(normalizeToolArguments('not json')).toBe('{}');
+      expect(normalizeToolArguments('{"a": 1} trailing')).toBe('{}');
+    });
+
+    it('passes valid JSON objects through unchanged', () => {
+      expect(normalizeToolArguments('{}')).toBe('{}');
+      expect(normalizeToolArguments('{"a": 1}')).toBe('{"a": 1}');
+      expect(normalizeToolArguments('  {"nested": {"b": 2}}  ')).toBe('{"nested": {"b": 2}}');
+    });
+
+    it('coerces top-level non-object JSON to {}', () => {
+      // Regression: 'null', scalars, and arrays parse as JSON but are not a
+      // valid named-parameter arguments object — strict providers (MiniMax
+      // 2013, ZAI/GLM 1214) reject them when the assistant turn is replayed.
+      expect(normalizeToolArguments('null')).toBe('{}');
+      expect(normalizeToolArguments('123')).toBe('{}');
+      expect(normalizeToolArguments('1.5')).toBe('{}');
+      expect(normalizeToolArguments('true')).toBe('{}');
+      expect(normalizeToolArguments('"just a string"')).toBe('{}');
+      expect(normalizeToolArguments('[1, 2]')).toBe('{}');
+      expect(normalizeToolArguments('[]')).toBe('{}');
+    });
+
+    it('coerces non-string inputs to {}', () => {
+      expect(normalizeToolArguments(undefined)).toBe('{}');
+      expect(normalizeToolArguments(null)).toBe('{}');
+      expect(normalizeToolArguments({ a: 1 })).toBe('{}');
     });
   });
 });

@@ -471,18 +471,36 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
   ): Promise<{ output: unknown; costUsd?: number }> {
     const timeoutMs = step.timeoutMs ?? 60_000;
 
-    // Race the step execution against the timeout
-    const result = await Promise.race([
-      this.dispatchStep(step, signal),
-      new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error(`Step ${step.index} timed out after ${timeoutMs}ms`)),
-          timeoutMs
-        );
-      }),
-    ]);
+    // Per-step controller: when the timeout wins the race, abort THIS step's
+    // dispatch so an abandoned attempt cannot keep running — and, with the
+    // orchestrator's retry, cannot duplicate side effects in the background
+    // while later attempts re-dispatch the same step. The execution-level
+    // signal (state.abortController) still wins: cancelling the whole run
+    // aborts every in-flight step.
+    const stepAbort = new AbortController();
+    if (signal) {
+      if (signal.aborted) stepAbort.abort(signal.reason);
+      else signal.addEventListener('abort', () => stepAbort.abort(signal.reason), { once: true });
+    }
 
-    return result;
+    // Race the step execution against the timeout. The timer MUST be cleared
+    // when either side settles — otherwise a dead 60s (direct-LLM) / 600s
+    // (claw) setTimeout lingers in the event loop for every executed step,
+    // keeping loop resources pinned long after fast steps finished.
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      return await Promise.race([
+        this.dispatchStep(step, stepAbort.signal),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            stepAbort.abort(new Error(`Step ${step.index} timed out after ${timeoutMs}ms`));
+            reject(new Error(`Step ${step.index} timed out after ${timeoutMs}ms`));
+          }, timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /**

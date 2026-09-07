@@ -535,6 +535,38 @@ describe('get_cost_summary', () => {
     });
   });
 
+  it('returns structured errors for malformed custom-period dates', async () => {
+    const { run } = setup();
+
+    // Regression: unchecked new Date() produced an Invalid Date whose NaN
+    // range comparisons defeated the filter and whose toISOString() threw a
+    // raw RangeError out of the executor.
+    const badStart = await run({ period: 'custom', startDate: 'not-a-date' }, dummyContext);
+    expect(badStart.content).toEqual({
+      success: false,
+      error: 'Invalid startDate: not-a-date',
+    });
+
+    const badEnd = await run(
+      { period: 'custom', startDate: new Date().toISOString(), endDate: 'also-not-a-date' },
+      dummyContext
+    );
+    expect(badEnd.content).toEqual({
+      success: false,
+      error: 'Invalid endDate: also-not-a-date',
+    });
+  });
+
+  it('accepts a valid custom range', async () => {
+    const { tracker, run } = setup();
+    tracker.getSummary.mockResolvedValue(makeSummary());
+    const result = await run(
+      { period: 'custom', startDate: new Date(Date.now() - 60_000).toISOString() },
+      dummyContext
+    );
+    expect((result.content as Record<string, unknown>)['success']).toBe(true);
+  });
+
   it('returns formatted summary fields', async () => {
     const { tracker, run } = setup();
     tracker.getTodayUsage.mockResolvedValue(makeSummary());

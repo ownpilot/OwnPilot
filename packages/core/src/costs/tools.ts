@@ -224,17 +224,31 @@ export function createCostToolExecutors(
         case 'month':
           summary = await tracker.getMonthUsage();
           break;
-        case 'custom':
+        case 'custom': {
           if (!args.startDate) {
             return {
               content: { success: false, error: 'startDate required for custom period' },
             };
           }
-          summary = await tracker.getSummary(
-            new Date(args.startDate),
-            args.endDate ? new Date(args.endDate) : new Date()
-          );
+          // LLM-generated date strings are frequently malformed; an Invalid
+          // Date makes getUsage's range comparisons NaN-pass EVERY record and
+          // getSummary's toISOString() throw a raw RangeError. Reject with the
+          // same structured shape as the missing-startDate sibling above.
+          const start = new Date(args.startDate);
+          if (Number.isNaN(start.getTime())) {
+            return {
+              content: { success: false, error: `Invalid startDate: ${args.startDate}` },
+            };
+          }
+          const end = args.endDate ? new Date(args.endDate) : new Date();
+          if (Number.isNaN(end.getTime())) {
+            return {
+              content: { success: false, error: `Invalid endDate: ${args.endDate}` },
+            };
+          }
+          summary = await tracker.getSummary(start, end);
           break;
+        }
       }
 
       return {

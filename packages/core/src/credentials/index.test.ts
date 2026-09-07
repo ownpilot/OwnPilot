@@ -311,6 +311,24 @@ describe('UserCredentialStore.store()', () => {
     expect(result!.value).toBe('sk-stored');
   });
 
+  it('replaces an existing credential for the same user+provider', async () => {
+    // Regression: store() used to append a second entry without removing the
+    // existing one; getByProvider() returns the first (oldest) entry, so the
+    // stale value stayed active and the new id was never served.
+    await store.store(USER_A, 'openai', 'api_key', 'sk-old');
+    const idNew = await store.store(USER_A, 'openai', 'api_key', 'sk-new');
+
+    const active = await store.get(USER_A, 'openai');
+    expect(active?.value).toBe('sk-new');
+
+    const listed = await store.list(USER_A);
+    expect(listed).toHaveLength(1);
+    expect(listed[0]!.id).toBe(idNew);
+
+    const byId = await store.getById(idNew, USER_A);
+    expect(byId?.value).toBe('sk-new');
+  });
+
   it('stores the label in metadata', async () => {
     const backend = makeBackend();
     const s = makeStore(FIXED_KEY, backend);

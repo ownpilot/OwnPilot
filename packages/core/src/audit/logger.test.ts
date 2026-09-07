@@ -78,6 +78,37 @@ describe('AuditLogger', () => {
       }
     });
 
+    it('keeps the hash chain intact under concurrent log() calls', async () => {
+      // Regression: log() used to read previousChecksum in its synchronous
+      // prefix and only updated it after its awaits, so concurrent
+      // fire-and-forget calls all chained to the same predecessor and broke
+      // the hash chain (verifyAuditLog reported chain breaks). The write
+      // critical section is serialized by the logger now. Real timers — the
+      // write queue must turn real microtasks/fs ticks.
+      const logger = createAuditLogger({ path: logPath });
+
+      const N = 8;
+      const pending = Array.from({ length: N }, (_, i) =>
+        logger.log({
+          type: 'system.start',
+          actor: SYSTEM_ACTOR,
+          resource: { type: 'proof', id: `resource-${i}` },
+          outcome: 'success',
+        })
+      );
+
+      const results = await Promise.all(pending);
+      expect(results.every((r) => r.ok)).toBe(true);
+
+      const verification = await verifyAuditLog(logPath);
+      expect(verification.ok).toBe(true);
+      if (verification.ok) {
+        expect(verification.value.valid).toBe(true);
+        expect(verification.value.totalEvents).toBe(N);
+        expect(verification.value.errors).toEqual([]);
+      }
+    });
+
     it('generates UUIDv7-style IDs (time-ordered)', async () => {
       vi.useFakeTimers();
       try {

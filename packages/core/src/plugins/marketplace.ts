@@ -316,6 +316,46 @@ export function calculateSecurityRisk(
 // =============================================================================
 
 /**
+ * Canonical JSON serialization for manifest hashing.
+ *
+ * JSON.stringify's array-replacer form does NOT produce canonical output: per
+ * ECMA-262 an array replacer is a property-name whitelist applied recursively
+ * at EVERY nesting level (and it never reorders keys). Passing the top-level
+ * key list therefore dropped every nested manifest field that was not also a
+ * top-level key name from the hashed string — the entire security declaration,
+ * publisher.email/verified, compatibility, pricing — so manifestHash never
+ * covered them and verifySignature accepted manifests tampered in nested
+ * fields. Serialize with recursively sorted keys instead so the hash is
+ * deterministic AND covers the full manifest. signManifest and verifySignature
+ * MUST keep using this same serializer.
+ */
+function canonicalManifestJson(value: unknown): string {
+  if (value === undefined) {
+    return 'null';
+  }
+  if (value === null || typeof value !== 'object') {
+    // Primitives defer to JSON.stringify; function/symbol values stringify to
+    // undefined, coerced to null so the hash input is always well-formed.
+    const s = JSON.stringify(value);
+    return s === undefined ? 'null' : s;
+  }
+  if (Array.isArray(value)) {
+    // Element order is semantic and preserved.
+    return '[' + value.map((v) => canonicalManifestJson(v)).join(',') + ']';
+  }
+  const obj = value as Record<string, unknown>;
+  return (
+    '{' +
+    Object.keys(obj)
+      .sort()
+      .filter((k) => obj[k] !== undefined)
+      .map((k) => JSON.stringify(k) + ':' + canonicalManifestJson(obj[k]))
+      .join(',') +
+    '}'
+  );
+}
+
+/**
  * Generate publisher key pair
  */
 export function generatePublisherKeys(): {
@@ -345,11 +385,16 @@ export function signManifest(
 ): PluginSignature {
   // Create deterministic manifest hash
   const manifestCopy = { ...manifest };
-  const manifestStr = JSON.stringify(manifestCopy, Object.keys(manifestCopy).sort());
+  const manifestStr = canonicalManifestJson(manifestCopy);
   const manifestHash = createHash('sha256').update(manifestStr).digest('hex');
 
-  // Create signature payload
-  const payload = `${manifestHash}:${contentHash}:${Date.now()}`;
+  // Create signature payload. The millisecond embedded in the payload and the
+  // stored timestamp MUST come from the same clock read: verifySignature
+  // rebuilds the payload from signature.timestamp, so any drift between the
+  // two reads (the RSA sign between them takes >1ms) breaks verification of a
+  // legitimately signed manifest on the real clock.
+  const signedAtMs = Date.now();
+  const payload = `${manifestHash}:${contentHash}:${signedAtMs}`;
 
   // Sign
   const sign = createSign('RSA-SHA256');
@@ -359,7 +404,7 @@ export function signManifest(
   return {
     algorithm: 'RSA-SHA256',
     signature,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(signedAtMs).toISOString(),
     publisherKeyId: keyId,
     manifestHash,
     contentHash,
@@ -382,7 +427,7 @@ export function verifySignature(
     const manifestCopy = { ...manifest };
     delete (manifestCopy as Partial<MarketplaceManifest>).signature;
     delete (manifestCopy as Partial<MarketplaceManifest>).marketplace;
-    const manifestStr = JSON.stringify(manifestCopy, Object.keys(manifestCopy).sort());
+    const manifestStr = canonicalManifestJson(manifestCopy);
     const manifestHash = createHash('sha256').update(manifestStr).digest('hex');
 
     // Verify manifest hash matches

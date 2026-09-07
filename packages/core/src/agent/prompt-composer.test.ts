@@ -41,6 +41,48 @@ describe('getTimeContext', () => {
     vi.useRealTimers();
   });
 
+  // Regression (server-vs-user timezone): wall-clock fields must describe the
+  // REQUESTED zone, not the server's. Pinned instant: 2026-09-06T02:30:00Z is
+  // Saturday 22:30 in New York (EDT), Sunday 11:30 in Tokyo, Sunday 05:30 in
+  // a UTC+3 server.
+  it('should derive wall-clock fields from an explicitly requested timezone', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-06T02:30:00.000Z'));
+
+    const ctx = getTimeContext('America/New_York');
+
+    expect(ctx.timezone).toBe('America/New_York');
+    expect(ctx.dayOfWeek).toBe('Saturday');
+    expect(ctx.timeOfDay).toBe('night'); // 22:30 local
+  });
+
+  it('should cross the date line for zones ahead of the server', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-06T02:30:00.000Z'));
+
+    const ctx = getTimeContext('Asia/Tokyo');
+
+    expect(ctx.timezone).toBe('Asia/Tokyo');
+    expect(ctx.dayOfWeek).toBe('Sunday');
+    expect(ctx.timeOfDay).toBe('morning'); // 11:30 local
+  });
+
+  it('should fall back to the server clock for an invalid timezone identifier', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-06T02:30:00.000Z'));
+
+    const ctx = getTimeContext('Not/AZone');
+
+    const serverZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const expectedDay = new Intl.DateTimeFormat('en-US', {
+      timeZone: serverZone,
+      weekday: 'long',
+    }).format(new Date('2026-09-06T02:30:00.000Z'));
+
+    expect(ctx.timezone).toBe(serverZone);
+    expect(ctx.dayOfWeek).toBe(expectedDay);
+  });
+
   it('should return morning for hour 5', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2025, 0, 1, 5, 0, 0));

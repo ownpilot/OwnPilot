@@ -387,6 +387,36 @@ const DEFAULT_CONSTRAINTS: Record<
   },
 };
 
+/**
+ * Map an executor kind to the capability/provider that executes it.
+ * Single source of truth for plan-step capability labeling — branch B and the
+ * single-step branch of plan() must derive step capabilityId/providerId from
+ * the step's executorKind through this helper (branch B previously hardcoded
+ * the claw capability while executorKind reflected the real primary kind).
+ */
+function capabilityFor(kind: ExecutorKind): { capabilityId: string; providerId: string } {
+  const capabilityId =
+    kind === 'claw'
+      ? 'claw:single-shot'
+      : kind === 'direct_llm'
+        ? 'direct-llm:chat'
+        : kind === 'soul_heartbeat'
+          ? 'soul:heartbeat'
+          : kind === 'coding_agent'
+            ? 'coding-agent:claude-code'
+            : kind === 'workflow'
+              ? 'workflow:dag'
+              : 'claw:single-shot';
+  const providerId = capabilityId.startsWith('claw')
+    ? 'ownpilot:claw'
+    : capabilityId.startsWith('direct')
+      ? 'ownpilot:llm'
+      : capabilityId.startsWith('coding')
+        ? 'ownpilot:coding-agent'
+        : 'ownpilot:claw';
+  return { capabilityId, providerId };
+}
+
 /** Parse a trigger strategy from task text. */
 function inferTriggerStrategy(description: string): TaskTriggerStrategy | undefined {
   const lower = description.toLowerCase();
@@ -570,11 +600,12 @@ export class AgenticRouter implements IAgenticRouter {
         retryOnFailure: false,
       });
 
+      const executionCapability = capabilityFor(kinds[0]!);
       steps.push({
         index: 2,
         executorKind: kinds[0]!,
-        capabilityId: kinds[0]! === 'claw' ? 'claw:single-shot' : 'direct-llm:chat',
-        providerId: kinds[0]! === 'claw' ? 'ownpilot:claw' : 'ownpilot:llm',
+        capabilityId: executionCapability.capabilityId,
+        providerId: executionCapability.providerId,
         params: {
           task: task.description,
           expectedOutput: task.expectedOutput,
@@ -589,11 +620,12 @@ export class AgenticRouter implements IAgenticRouter {
       const primaryKind = kinds[0]!;
       const supportKind = kinds.length > 1 ? kinds[1] : undefined;
 
+      const primaryCapability = capabilityFor(primaryKind);
       steps.push({
         index: 1,
         executorKind: primaryKind,
-        capabilityId: `claw:single-shot`,
-        providerId: 'ownpilot:claw',
+        capabilityId: primaryCapability.capabilityId,
+        providerId: primaryCapability.providerId,
         params: {
           task: task.description,
           expectedOutput: task.expectedOutput,
@@ -623,30 +655,13 @@ export class AgenticRouter implements IAgenticRouter {
       }
     } else {
       // Single-step plan
-      const capId =
-        kinds[0]! === 'claw'
-          ? 'claw:single-shot'
-          : kinds[0]! === 'direct_llm'
-            ? 'direct-llm:chat'
-            : kinds[0]! === 'soul_heartbeat'
-              ? 'soul:heartbeat'
-              : kinds[0]! === 'coding_agent'
-                ? 'coding-agent:claude-code'
-                : kinds[0]! === 'workflow'
-                  ? 'workflow:dag'
-                  : 'claw:single-shot';
+      const { capabilityId: capId, providerId } = capabilityFor(kinds[0]!);
 
       steps.push({
         index: 1,
         executorKind: kinds[0]!,
         capabilityId: capId,
-        providerId: capId.startsWith('claw')
-          ? 'ownpilot:claw'
-          : capId.startsWith('direct')
-            ? 'ownpilot:llm'
-            : capId.startsWith('coding')
-              ? 'ownpilot:coding-agent'
-              : 'ownpilot:claw',
+        providerId,
         params: {
           task: task.description,
           expectedOutput: task.expectedOutput,

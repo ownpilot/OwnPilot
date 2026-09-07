@@ -85,6 +85,15 @@ export class AuditLogger {
   private previousChecksum: string = '';
   private eventCount: number = 0;
   private initialized: boolean = false;
+  /**
+   * Serializes hash-chain writes. The chain link (previousChecksum) must be
+   * read and the state updated atomically per event: log() is async and
+   * normally invoked fire-and-forget, so concurrent callers would otherwise
+   * all read the same head in their synchronous prefix and append events
+   * chaining to the same predecessor — breaking the hash chain. Failures keep
+   * the queue alive — each failed caller still gets its own err result.
+   */
+  private writeQueue: Promise<unknown> = Promise.resolve();
 
   constructor(config: AuditLoggerConfig) {
     this.config = {
@@ -176,17 +185,21 @@ export class AuditLogger {
       parentId: input.parentId,
     };
 
-    // Compute checksum
+    // Compute checksum (content-derived — order-independent, safe outside the queue)
     const checksum = computeChecksum(eventWithoutChecksum);
 
-    // Build full event
-    const event: AuditEvent = {
-      ...eventWithoutChecksum,
-      checksum,
-      previousChecksum: this.previousChecksum,
-    };
+    // Serialize the write critical section: the chain link (previousChecksum)
+    // must be read and the state updated atomically per write. Concurrent
+    // log() calls (fire-and-forget audit logging is the normal usage) would
+    // otherwise all read the same head in their synchronous prefix and append
+    // events chaining to the same predecessor, breaking the hash chain.
+    const write = this.writeQueue.then(async (): Promise<AuditEvent> => {
+      const event: AuditEvent = {
+        ...eventWithoutChecksum,
+        checksum,
+        previousChecksum: this.previousChecksum,
+      };
 
-    try {
       // Check file size and rotate if needed
       await this.rotateIfNeeded();
 
@@ -202,6 +215,18 @@ export class AuditLogger {
         this.logToConsole(event);
       }
 
+      return event;
+    });
+
+    // A failed write must not stall subsequent writes — each failed caller
+    // still gets its own err result below.
+    this.writeQueue = write.then(
+      () => undefined,
+      () => undefined
+    );
+
+    try {
+      const event = await write;
       return ok(event);
     } catch (error) {
       return err(new InternalError(`Failed to write audit event: ${error}`, { cause: error }));

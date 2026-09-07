@@ -422,6 +422,97 @@ describe('verifySignature', () => {
     }
   });
 
+  it('should detect tampering of NESTED manifest fields after signing', () => {
+    const keys = generatePublisherKeys();
+    const manifest = makeMinimalManifest();
+    const sig = signManifest(manifest, keys.privateKey, keys.keyId, 'hash');
+    // The canonical manifest hash must cover the FULL manifest. The historic
+    // JSON.stringify array-replacer form whitelisted property names recursively
+    // at every nesting level, so nested fields not named like a top-level key
+    // (the whole security declaration, publisher.email/verified, compatibility,
+    // pricing) were dropped from the hash and tampering them verified clean.
+    const tampered: MarketplaceManifest = {
+      ...manifest,
+      signature: sig,
+      security: {
+        ...manifest.security,
+        networkAccess: { ...manifest.security.networkAccess, makesExternalRequests: true },
+      },
+      publisher: { ...manifest.publisher, verified: true },
+      compatibility: { ...manifest.compatibility, minGatewayVersion: '999.0.0' },
+    };
+
+    const result = verifySignature(tampered, keys.publicKey);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain('Manifest hash mismatch');
+    }
+  });
+
+  it('should still detect tampering of nested keys whose names collide with top-level keys', () => {
+    const keys = generatePublisherKeys();
+    const manifest = makeMinimalManifest();
+    const sig = signManifest(manifest, keys.privateKey, keys.keyId, 'hash');
+    // publisher.name survived the historic replacer whitelist because 'name'
+    // is also a top-level manifest key — coverage the serializer must keep.
+    const tampered: MarketplaceManifest = {
+      ...manifest,
+      signature: sig,
+      publisher: { ...manifest.publisher, name: 'Renamed Publisher' },
+    };
+
+    const result = verifySignature(tampered, keys.publicKey);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain('Manifest hash mismatch');
+    }
+  });
+
+  it('should detect tampering of nested manifest fields', () => {
+    const keys = generatePublisherKeys();
+    const manifest = makeMinimalManifest();
+    const sig = signManifest(manifest, keys.privateKey, keys.keyId, 'hash');
+    // Tamper with NESTED fields only: the security declaration, the publisher
+    // verification flag, and the compatibility floor. JSON.stringify's
+    // array-replacer canonicalization whitelisted recursively at every level,
+    // so the manifest hash never covered these and verification passed.
+    const tampered: MarketplaceManifest = {
+      ...manifest,
+      signature: sig,
+      publisher: { ...manifest.publisher, verified: true },
+      security: {
+        ...manifest.security,
+        networkAccess: { ...manifest.security.networkAccess, makesExternalRequests: true },
+      },
+      compatibility: { ...manifest.compatibility, minGatewayVersion: '999.0.0' },
+    };
+
+    const result = verifySignature(tampered, keys.publicKey);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain('Manifest hash mismatch');
+    }
+  });
+
+  it('should still detect tampering of nested keys that collide with top-level names', () => {
+    const keys = generatePublisherKeys();
+    const manifest = makeMinimalManifest();
+    const sig = signManifest(manifest, keys.privateKey, keys.keyId, 'hash');
+    // publisher.name survives even the legacy replacer ('name' is also a
+    // top-level key) — guard that the recursive serializer kept this coverage.
+    const tampered: MarketplaceManifest = {
+      ...manifest,
+      signature: sig,
+      publisher: { ...manifest.publisher, name: 'Renamed Publisher' },
+    };
+
+    const result = verifySignature(tampered, keys.publicKey);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain('Manifest hash mismatch');
+    }
+  });
+
   it('should fail verification with wrong public key', () => {
     const keys1 = generatePublisherKeys();
     const keys2 = generatePublisherKeys();
@@ -461,6 +552,30 @@ describe('verifySignature', () => {
       expect(result.value).toBe(true);
     }
   });
+});
+
+// =============================================================================
+// Real-clock signing round-trip
+// =============================================================================
+
+// signManifest embeds a Date.now() millisecond in the signed payload and
+// verifySignature rebuilds the payload from signature.timestamp. The two
+// values MUST come from the same clock read — the describes above freeze time
+// (vi.useFakeTimers), which masks drift between the payload's clock read and
+// the stored timestamp. This round-trip deliberately runs on the real clock.
+describe('signManifest/verifySignature on the real clock', () => {
+  it('verifies a manifest signed without frozen time', () => {
+    const keys = generatePublisherKeys();
+    const manifest = makeMinimalManifest();
+    const sig = signManifest(manifest, keys.privateKey, keys.keyId, 'content-hash');
+    const signedManifest: MarketplaceManifest = { ...manifest, signature: sig };
+
+    const result = verifySignature(signedManifest, keys.publicKey);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toBe(true);
+    }
+  }, 15000);
 });
 
 // =============================================================================

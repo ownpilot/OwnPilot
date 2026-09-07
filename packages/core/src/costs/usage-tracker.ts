@@ -253,7 +253,11 @@ export class UsageTracker extends EventEmitter {
       records = records.filter((r) => new Date(r.timestamp) >= startDate);
     }
 
-    return records.sort((a, b) => b.cost - a.cost).slice(0, limit);
+    // Sort a COPY: without startDate, `records` aliases this.records, and
+    // Array#sort mutates in place — a read method must not reorder the
+    // tracker's shared chronological store (every later getUsage() and
+    // exportUsage() would silently observe cost order).
+    return [...records].sort((a, b) => b.cost - a.cost).slice(0, limit);
   }
 
   /**

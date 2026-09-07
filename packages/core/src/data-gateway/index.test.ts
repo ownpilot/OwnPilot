@@ -941,6 +941,33 @@ describe('Calendar Operations', () => {
       expect(results[0]!.title).toBe('Current');
     });
 
+    it('includes timed same-day events for day-granularity bounds', async () => {
+      // Regression: the filter compared startTime to the bounds as raw
+      // strings, so a day-granularity endDate ('2026-09-06') lexicographically
+      // excluded timed events on that day ('2026-09-06T10:00:00Z' is greater
+      // than '2026-09-06').
+      await gw.createEvent('agent-1', { title: 'Standup', startTime: '2026-09-06T10:00:00Z' });
+      await gw.createEvent('agent-1', { title: 'Workshop', startTime: '2026-09-06', allDay: true });
+
+      const results = await gw.listEvents('agent-1', {
+        startDate: '2026-09-06',
+        endDate: '2026-09-06',
+      });
+      expect(results.map((e) => e.title).sort()).toEqual(['Standup', 'Workshop']);
+    });
+
+    it('includes all events in a day-granularity range query', async () => {
+      await gw.createEvent('agent-1', { title: 'Prior', startTime: '2026-09-05T18:00:00Z' });
+      await gw.createEvent('agent-1', { title: 'Standup', startTime: '2026-09-06T10:00:00Z' });
+      await gw.createEvent('agent-1', { title: 'Workshop', startTime: '2026-09-06', allDay: true });
+
+      const results = await gw.listEvents('agent-1', {
+        startDate: '2026-09-05',
+        endDate: '2026-09-06',
+      });
+      expect(results.map((e) => e.title).sort()).toEqual(['Prior', 'Standup', 'Workshop']);
+    });
+
     it('filters by category', async () => {
       await gw.createEvent('agent-1', {
         title: 'Work',
