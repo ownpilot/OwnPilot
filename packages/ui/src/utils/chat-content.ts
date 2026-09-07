@@ -128,10 +128,16 @@ const parseMarkerData = (inner: string): Array<{ title: string; detail: string }
   try {
     const parsed = JSON.parse(inner);
     if (Array.isArray(parsed)) {
-      return parsed.map((item) => ({
-        title: typeof item === 'string' ? item : (item.title ?? String(item)),
-        detail: typeof item === 'object' ? (item.detail ?? item.description ?? '') : '',
-      }));
+      // A `null` item makes the map below throw inside the try above, so the
+      // WHOLE array falls back to line-parsing: one garbage suggestion whose
+      // title is the raw JSON text replaces every real suggestion. Drop
+      // nulls instead — they carry no content. (round 64)
+      return parsed
+        .filter((item) => item != null)
+        .map((item) => ({
+          title: typeof item === 'string' ? item : (item.title ?? String(item)),
+          detail: typeof item === 'object' ? (item.detail ?? item.description ?? '') : '',
+        }));
     }
   } catch {
     /* fall through to line parsing */

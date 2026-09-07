@@ -106,4 +106,31 @@ describe('parseMarkers', () => {
       )
     ).toBe('Text');
   });
+
+  it('drops null items instead of garbage-falling-back (round 64)', () => {
+    // A null item made the array map throw inside parseMarkerData's try, so
+    // the whole array fell back to line-parsing: one garbage suggestion whose
+    // title was the raw JSON text (`[null]`), replacing every real suggestion.
+    const { widgets, suggestions } = parseMarkers(
+      '<!--SUGGESTIONS#START-->[null]<!--SUGGESTIONS#END-->'
+    );
+    expect(widgets).toHaveLength(0);
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0]!.items).toEqual([]);
+  });
+
+  it('drops null items but keeps real siblings in a mixed array (round 64)', () => {
+    const { suggestions } = parseMarkers(
+      '<!--SUGGESTIONS#START-->[null,"Do X"]<!--SUGGESTIONS#END-->'
+    );
+    expect(suggestions[0]!.items).toEqual([{ title: 'Do X', detail: '' }]);
+  });
+
+  it('parses string-array suggestions (round 64 CONTROL)', () => {
+    const { suggestions } = parseMarkers('<!--SUGGESTIONS#START-->["A","B"]<!--SUGGESTIONS#END-->');
+    expect(suggestions[0]!.items).toEqual([
+      { title: 'A', detail: '' },
+      { title: 'B', detail: '' },
+    ]);
+  });
 });
