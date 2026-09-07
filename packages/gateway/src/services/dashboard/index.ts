@@ -277,8 +277,23 @@ export class DashboardService {
         orchestrator.getStats(),
         orchestrator.listExecutions(5, 0),
       ]);
-      const today = new Date().toISOString().split('T')[0] ?? '';
-      const todayExecs = executions.filter((e) => e.startedAt.toISOString().startsWith(today));
+      const now = new Date();
+      const today =
+        String(now.getFullYear()).padStart(4, '0') +
+        '-' +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(now.getDate()).padStart(2, '0');
+      const todayExecs = executions.filter((e) => {
+        const d = e.startedAt;
+        const local =
+          String(d.getFullYear()).padStart(4, '0') +
+          '-' +
+          String(d.getMonth() + 1).padStart(2, '0') +
+          '-' +
+          String(d.getDate()).padStart(2, '0');
+        return local === today;
+      });
       agenticSummary = {
         totalExecutions: stats.totalExecutions,
         activeExecutions: stats.activeExecutions,
