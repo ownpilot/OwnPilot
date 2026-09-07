@@ -70,7 +70,7 @@ function computePeriodDates(
   }
 
   const now = new Date();
-  const endDate = now.toISOString().split('T')[0];
+  const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   switch (period) {
     case 'today':
@@ -78,7 +78,10 @@ function computePeriodDates(
     case 'this_week': {
       const ws = new Date(now);
       ws.setDate(now.getDate() - now.getDay());
-      return { startDate: ws.toISOString().split('T')[0], endDate };
+      return {
+        startDate: `${ws.getFullYear()}-${String(ws.getMonth() + 1).padStart(2, '0')}-${String(ws.getDate()).padStart(2, '0')}`,
+        endDate,
+      };
     }
     case 'this_month':
       return {
@@ -89,8 +92,8 @@ function computePeriodDates(
       const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lme = new Date(now.getFullYear(), now.getMonth(), 0);
       return {
-        startDate: lm.toISOString().split('T')[0],
-        endDate: lme.toISOString().split('T')[0],
+        startDate: `${lm.getFullYear()}-${String(lm.getMonth() + 1).padStart(2, '0')}-${String(lm.getDate()).padStart(2, '0')}`,
+        endDate: `${lme.getFullYear()}-${String(lme.getMonth() + 1).padStart(2, '0')}-${String(lme.getDate()).padStart(2, '0')}`,
       };
     }
     case 'this_year':
