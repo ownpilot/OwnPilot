@@ -357,7 +357,13 @@ export class PromptComposer {
     if (this.options.includeUserProfile && context.userProfile) {
       const userInfo = formatUserProfile(context.userProfile);
       if (userInfo) {
-        push('user_profile', PROMPT_SECTIONS.userProfile.replace('{{userInfo}}', userInfo));
+        // Replacement must be a FUNCTION: a string replacement interprets
+        // $&, $`, $' and $$ inside the value (user/model content!) and
+        // corrupts the composed prompt. (round 66)
+        push(
+          'user_profile',
+          PROMPT_SECTIONS.userProfile.replace('{{userInfo}}', () => userInfo)
+        );
       }
     }
 
@@ -366,14 +372,17 @@ export class PromptComposer {
       const instructions = context.customInstructions.map((i) => `- ${i}`).join('\n');
       push(
         'custom_instructions',
-        PROMPT_SECTIONS.customInstructions.replace('{{instructions}}', instructions)
+        PROMPT_SECTIONS.customInstructions.replace('{{instructions}}', () => instructions)
       );
     }
 
     // 4. Available tools
     if (this.options.includeToolDescriptions && context.tools && context.tools.length > 0) {
       const toolList = formatTools(context.tools);
-      push('tools', PROMPT_SECTIONS.tools.replace('{{toolList}}', toolList));
+      push(
+        'tools',
+        PROMPT_SECTIONS.tools.replace('{{toolList}}', () => toolList)
+      );
 
       // 4a. Automation context (only if automation tools are registered)
       const hasAutomationTools = context.tools.some((t) => {
@@ -400,9 +409,9 @@ export class PromptComposer {
       push(
         'workspace',
         PROMPT_SECTIONS.workspace
-          .replace('{{allowedDirs}}', allowedDirs.join('\n'))
-          .replace(/\{\{workspaceDir\}\}/g, ws.workspaceDir)
-          .replace(/\{\{tempDir\}\}/g, ws.tempDir ?? '/tmp')
+          .replace('{{allowedDirs}}', () => allowedDirs.join('\n'))
+          .replace(/\{\{workspaceDir\}\}/g, () => ws.workspaceDir)
+          .replace(/\{\{tempDir\}\}/g, () => ws.tempDir ?? '/tmp')
       );
     }
 
@@ -412,7 +421,7 @@ export class PromptComposer {
       if (capsList) {
         push(
           'capabilities',
-          PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', capsList)
+          PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', () => capsList)
         );
       }
     }
@@ -433,9 +442,9 @@ export class PromptComposer {
       push(
         'time_context',
         PROMPT_SECTIONS.timeContext
-          .replace('{{time}}', timeStr)
-          .replace('{{dayOfWeek}}', tc.dayOfWeek)
-          .replace('{{timezone}}', tc.timezone ?? 'Unknown')
+          .replace('{{time}}', () => timeStr)
+          .replace('{{dayOfWeek}}', () => tc.dayOfWeek)
+          .replace('{{timezone}}', () => tc.timezone ?? 'Unknown')
       );
     }
 
@@ -460,7 +469,9 @@ export class PromptComposer {
       if (contextLines.length > 0) {
         push(
           'conversation_context',
-          PROMPT_SECTIONS.conversationContext.replace('{{contextInfo}}', contextLines.join('\n'))
+          PROMPT_SECTIONS.conversationContext.replace('{{contextInfo}}', () =>
+            contextLines.join('\n')
+          )
         );
       }
     }

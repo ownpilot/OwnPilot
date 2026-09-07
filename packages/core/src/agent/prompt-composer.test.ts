@@ -586,4 +586,52 @@ describe('PromptComposer', () => {
       expect(result).toContain('## Conversation Context');
     });
   });
+
+  describe('dollar-pattern safety (round 66)', () => {
+    // Per-describe composer (the file's convention): restricted to the
+    // sections these tests assert on.
+    const composer = new PromptComposer({
+      includeToolDescriptions: false,
+      includeUserProfile: true,
+      includeTimeContext: false,
+      includeCapabilities: false,
+    });
+
+    it("renders '$$' in custom instructions verbatim", () => {
+      const result = composer.compose(baseContext({ customInstructions: ['Budget in $$ only'] }));
+      expect(result).toContain('- Budget in $$ only');
+    });
+
+    it("renders '$&' in custom instructions verbatim", () => {
+      const result = composer.compose(
+        baseContext({ customInstructions: ['use $& for all matches'] })
+      );
+      expect(result).toContain('use $& for all matches');
+    });
+
+    it("does not resurrect '{{userInfo}}' for a fact containing '$&'", () => {
+      const result = composer.compose(
+        baseContext({
+          userProfile: makeProfile({
+            facts: [{ key: 'shell', value: 'use $& in scripts', confidence: 1 }],
+          }),
+        })
+      );
+      expect(result).not.toContain('{{userInfo}}');
+      expect(result).toContain('use $& in scripts');
+    });
+
+    it('CONTROL: benign instructions and facts render unchanged', () => {
+      const result = composer.compose(
+        baseContext({
+          customInstructions: ['Always use metric units'],
+          userProfile: makeProfile({
+            facts: [{ key: 'shell', value: 'prefers zsh', confidence: 1 }],
+          }),
+        })
+      );
+      expect(result).toContain('- Always use metric units');
+      expect(result).toContain('shell: prefers zsh');
+    });
+  });
 });
