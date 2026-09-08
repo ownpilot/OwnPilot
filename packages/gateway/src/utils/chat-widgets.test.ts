@@ -411,3 +411,44 @@ describe('flattenChatWidgetsToText', () => {
     expect(result).toContain('**K:** V');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Apostrophes inside single-quoted JSON data (round 69)
+// ---------------------------------------------------------------------------
+
+// Pre-round-69, findWidgetTagEnd()/splitWidgetTag() delimited attribute
+// values with a naive same-quote toggle: an apostrophe inside a JSON string
+// value ("Don't") closed the value early, the JSON's own double quotes
+// re-opened quote mode, and the tag's `/>` terminator was swallowed — the
+// widget failed to parse and its RAW markup leaked into normalized chat.
+describe('normalizeChatWidgets — apostrophes in single-quoted JSON data (round 69)', () => {
+  it('normalizes a widget whose single-quoted JSON data contains an apostrophe', () => {
+    const out = normalizeChatWidgets(
+      `Here is your metric:\n<metric data='{"title": "Don't stop me now", "items":[{"label":"v","value":1}]}' />\nThanks!`
+    );
+    expect(out).toContain('<widget name="metric"');
+    expect(out).not.toMatch(/<metric\b/);
+    expect(out).toContain(`Don't stop me now`);
+    expect(out).toContain('Here is your metric:');
+    expect(out).toContain('Thanks!');
+  });
+
+  it('normalizes a table whose row cells contain apostrophes', () => {
+    const out = normalizeChatWidgets(
+      `Your plan:\n<table data='{"headers":["Step","Note"],"rows":[["1","It's easy"],["2","Done"]]}' />\nBye!`
+    );
+    expect(out).toContain('<widget name="table"');
+    expect(out).not.toMatch(/<table\b/);
+    expect(out).toContain(`It's easy`);
+    expect(out).toContain('Bye!');
+  });
+
+  it('control: apostrophe-free single-quoted JSON data still normalizes', () => {
+    const out = normalizeChatWidgets(
+      `Plain:\n<metric data='{"title":"Quarterly numbers","items":[]}' />\nDone.`
+    );
+    expect(out).toContain('<widget name="metric"');
+    expect(out).not.toMatch(/<metric\b/);
+    expect(out).toContain('Done.');
+  });
+});

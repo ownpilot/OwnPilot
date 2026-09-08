@@ -122,6 +122,33 @@ function readBalancedAttributeValue(
   return stack.length > 0 ? { value: source.slice(startIndex), nextIndex: index } : null;
 }
 
+/**
+ * Skip past a single-quoted balanced-JSON attribute value (`='{"…"}'`,
+ * `='[…]'`). A same-quote toggle cannot delimit such a value: an apostrophe
+ * INSIDE a JSON string ("Don't") would close it early, the JSON's own double
+ * quotes would re-open quote mode, and the tag's `/>` / `>` terminator would
+ * be swallowed — the widget then fails to parse and its raw markup leaks
+ * into chat. Brace-balance the JSON body instead (the same knowledge
+ * parseTagAttributes applies to the data attribute) and expect the closing
+ * quote right after it. Returns the index just past the closing quote, or
+ * null when the value is not this shape.
+ */
+function skipQuotedBalancedValue(source: string, eqIndex: number): number | null {
+  let index = eqIndex + 1;
+  while (/\s/.test(source[index] ?? '')) index += 1;
+  if (source[index] !== "'") return null;
+  index += 1;
+  while (/\s/.test(source[index] ?? '')) index += 1;
+  const open = source[index];
+  if (open !== '{' && open !== '[') return null;
+  const balanced = readBalancedAttributeValue(source, index);
+  if (!balanced) return null;
+  let after = balanced.nextIndex;
+  while (/\s/.test(source[after] ?? '')) after += 1;
+  if (source[after] !== "'") return null;
+  return after + 1;
+}
+
 function parseTagAttributes(source: string): Record<string, string> {
   const attrs: Record<string, string> = {};
   let index = 0;
@@ -794,6 +821,16 @@ function splitWidgetTag(tag: string): WidgetTagParts | null {
       continue;
     }
 
+    if (char === '=') {
+      // A single-quoted JSON data value may contain apostrophes — the
+      // same-quote toggle below would mis-deliminate it (round 69).
+      const skipped = skipQuotedBalancedValue(trimmed, index);
+      if (skipped !== null) {
+        index = skipped - 1;
+        continue;
+      }
+    }
+
     if (char === '"' || char === "'") {
       quote = char;
       continue;
@@ -874,6 +911,16 @@ function findWidgetTagEnd(content: string, startIndex: number, tagName: string):
         quote = null;
       }
       continue;
+    }
+
+    if (char === '=') {
+      // A single-quoted JSON data value may contain apostrophes — the
+      // same-quote toggle below would mis-deliminate it (round 69).
+      const skipped = skipQuotedBalancedValue(content, index);
+      if (skipped !== null) {
+        index = skipped - 1;
+        continue;
+      }
     }
 
     if (char === '"' || char === "'") {
