@@ -1873,3 +1873,119 @@ describe('integration scenarios', () => {
     expect(notification.content.body).toBe('Scheduled: []');
   });
 });
+
+// =============================================================================
+// Quiet hours enforcement (round 72 regression)
+// =============================================================================
+
+// Pre-round-72, TaskNotificationConfig.respectQuietHours and
+// UserNotificationPreferences.quietHoursStart/End were declared (and the
+// notifyChannels fallback set respectQuietHours: true BY DEFAULT) but no
+// code path ever enforced them — scheduled notifications and reminders
+// fired during quiet hours.
+describe('SchedulerNotificationBridge quiet hours (round 72)', () => {
+  const local = (h: number, m: number, day = 8): Date => new Date(2026, 8, day, h, m, 0);
+
+  function makeQuietTask(id: string, userId = 'quiet-user'): ScheduledTask {
+    return {
+      id,
+      name: `Task ${id}`,
+      cron: '0 9 * * *',
+      type: 'prompt',
+      payload: { type: 'prompt', prompt: 'x' },
+      enabled: true,
+      priority: 'normal',
+      userId,
+      createdAt: '2026-09-01T00:00:00.000Z',
+      updatedAt: '2026-09-01T00:00:00.000Z',
+    } as unknown as ScheduledTask;
+  }
+
+  function makeExecResult(): TaskExecutionResult {
+    return {
+      taskId: 'exec-1',
+      status: 'completed',
+      result: 'done',
+      duration: 120,
+    } as unknown as TaskExecutionResult;
+  }
+
+  let handler: ReturnType<typeof vi.fn>;
+  let bridge: SchedulerNotificationBridge;
+  const task = makeQuietTask('quiet-task-1');
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    handler = vi.fn(async () => undefined);
+    bridge = new SchedulerNotificationBridge(handler as unknown as SchedulerNotificationHandler);
+    bridge.setTaskNotificationConfig(task.id, {
+      triggers: ['on_complete', 'on_start', 'reminder'],
+      reminderMinutes: 15,
+      respectQuietHours: true,
+    });
+    bridge.setUserPreferences(task.userId, {
+      channels: ['telegram'],
+      quietHoursStart: '22:00',
+      quietHoursEnd: '07:00',
+    });
+  });
+
+  afterEach(() => {
+    bridge.clearAllReminders();
+    vi.useRealTimers();
+  });
+
+  it('suppresses completion notifications late in the evening (23:30 inside 22:00-07:00)', async () => {
+    vi.setSystemTime(local(23, 30));
+    await bridge.onTaskComplete(task, makeExecResult());
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('suppresses across the midnight boundary (00:30 is still inside 22:00-07:00)', async () => {
+    vi.setSystemTime(local(0, 30, 9));
+    await bridge.onTaskComplete(task, makeExecResult());
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('suppresses on_start notifications inside the window', async () => {
+    vi.setSystemTime(local(23, 30));
+    await bridge.onTaskStart(task);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('suppresses a reminder whose FIRE time lands inside the window', async () => {
+    vi.setSystemTime(local(23, 20));
+    bridge.scheduleReminder(task, local(23, 50)); // reminder fires 23:35
+    await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('delivers outside the window (12:00)', async () => {
+    vi.setSystemTime(local(12, 0));
+    await bridge.onTaskComplete(task, makeExecResult());
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('delivers at 23:30 when the user has no quiet-hours preferences', async () => {
+    const taskB = makeQuietTask('quiet-task-2', 'no-prefs-user');
+    bridge.setTaskNotificationConfig(taskB.id, {
+      triggers: ['on_complete'],
+      respectQuietHours: true,
+    });
+    bridge.setUserPreferences(taskB.userId, { channels: ['telegram'] });
+    vi.setSystemTime(local(23, 30));
+    await bridge.onTaskComplete(taskB, makeExecResult());
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('delivers at 23:30 when respectQuietHours is false', async () => {
+    const taskC = makeQuietTask('quiet-task-3');
+    bridge.setTaskNotificationConfig(taskC.id, {
+      triggers: ['on_complete'],
+      respectQuietHours: false,
+    });
+    vi.setSystemTime(local(23, 30));
+    await bridge.onTaskComplete(taskC, makeExecResult());
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+});

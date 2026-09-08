@@ -249,6 +249,11 @@ export class SchedulerNotificationBridge {
       return;
     }
 
+    // Round 72: enforce the respectQuietHours contract at fire time.
+    if (this.shouldSuppressForQuietHours(task, config)) {
+      return;
+    }
+
     const event: TaskNotificationEvent = {
       type: 'start',
       task,
@@ -275,6 +280,11 @@ export class SchedulerNotificationBridge {
       (!isSuccess && config.triggers.includes('on_failure'));
 
     if (!shouldNotify) {
+      return;
+    }
+
+    // Round 72: enforce the respectQuietHours contract at fire time.
+    if (this.shouldSuppressForQuietHours(task, config)) {
       return;
     }
 
@@ -310,6 +320,13 @@ export class SchedulerNotificationBridge {
 
     const delay = reminderTime.getTime() - now.getTime();
     const timer = setTimeout(() => {
+      this.reminderTimers.delete(task.id);
+
+      // Quiet hours are judged at FIRE time, not schedule time (round 72).
+      if (this.shouldSuppressForQuietHours(task, config)) {
+        return;
+      }
+
       const event: TaskNotificationEvent = {
         type: 'reminder',
         task,
@@ -317,7 +334,6 @@ export class SchedulerNotificationBridge {
       };
 
       const notification = this.buildNotification(event, config, task.userId);
-      this.reminderTimers.delete(task.id);
 
       // Fire-and-forget context: nothing awaits this callback's promise, so
       // a rejecting handler here would surface as an UNHANDLED promise
@@ -354,6 +370,169 @@ export class SchedulerNotificationBridge {
       clearTimeout(timer);
     }
     this.reminderTimers.clear();
+  }
+
+  /**
+   * Whether `at` falls inside the user's quiet hours (local wall clock).
+   * The gateway runs on the user's own machine, so host-local time IS the
+   * user's wall clock (same convention as the day-basis fixes). Handles the
+   * midnight-spanning window (22:00-07:00 covers both 23:30 and 00:30);
+   * equal start/end is treated as a zero-length window (no quiet time), and
+   * malformed HH:MM strings disable the window rather than throwing.
+   */
+  private isQuietHours(userId: string, at: Date): boolean {
+    const prefs = this.userPreferences.get(userId);
+    if (!prefs?.quietHoursStart || !prefs?.quietHoursEnd) {
+      return false;
+    }
+    const parseMinutes = (value: string): number | null => {
+      const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+      if (!match) return null;
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours > 23 || minutes > 59) return null;
+      return hours * 60 + minutes;
+    };
+    const start = parseMinutes(prefs.quietHoursStart);
+    const end = parseMinutes(prefs.quietHoursEnd);
+    if (start === null || end === null || start === end) {
+      return false;
+    }
+    const now = at.getHours() * 60 + at.getMinutes();
+    return start < end
+      ? now >= start && now < end // same-day window
+      : now >= start || now < end; // window spans midnight
+  }
+
+  /**
+   * Whether a notification for this task should be suppressed right now:
+   * the task opted into quiet hours AND the owner defined a quiet window
+   * AND the fire time is inside it. (Round 72: the respectQuietHours flag
+   * was accepted — and defaulted true by the notifyChannels fallback — but
+   * never enforced anywhere, so scheduled notifications and reminders fired
+   * at 3am exactly as if the option did not exist.)
+   */
+  private shouldSuppressForQuietHours(
+    task: ScheduledTask,
+    config: TaskNotificationConfig
+  ): boolean {
+    if (!config.respectQuietHours) return false;
+    if (!this.isQuietHours(task.userId, new Date())) return false;
+    log.debug('Notification suppressed during quiet hours', {
+      taskId: task.id,
+      userId: task.userId,
+    });
+    return true;
+  }
+
+  /**
+   * Whether `at` falls inside the user's quiet hours (local wall clock —
+   * the gateway runs on the user's own machine, so host-local time IS the
+   * user's clock, the same convention as the day-basis fixes). Handles the
+   * midnight-spanning window: 22:00-07:00 must suppress both 23:30 and
+   * 00:30. `start === end` is treated as a zero-length window; unparsable
+   * times disable quiet hours rather than silently muting everything.
+   */
+  private isQuietHours(userId: string, at: Date): boolean {
+    const prefs = this.userPreferences.get(userId);
+    if (!prefs?.quietHoursStart || !prefs?.quietHoursEnd) {
+      return false;
+    }
+    const parse = (value: string): number | null => {
+      const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+      if (!match) return null;
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours > 23 || minutes > 59) return null;
+      return hours * 60 + minutes;
+    };
+    const start = parse(prefs.quietHoursStart);
+    const end = parse(prefs.quietHoursEnd);
+    if (start === null || end === null || start === end) {
+      return false;
+    }
+    const now = at.getHours() * 60 + at.getMinutes();
+    return start < end ? now >= start && now < end : now >= start || now < end;
+  }
+
+  /**
+   * Whether a notification for this task must be suppressed right now:
+   * the task opted into quiet hours (respectQuietHours — note the
+   * notifyChannels fallback sets it true BY DEFAULT) AND the owner defined
+   * a quiet window AND the fire time is inside it. Round 72: this flag was
+   * accepted in TaskNotificationConfig but never enforced anywhere, so
+   * scheduled notifications and reminders fired at 3am regardless.
+   */
+  private shouldSuppressForQuietHours(
+    task: ScheduledTask,
+    config: TaskNotificationConfig
+  ): boolean {
+    if (!config.respectQuietHours) {
+      return false;
+    }
+    if (!this.isQuietHours(task.userId, new Date())) {
+      return false;
+    }
+    log.debug('Notification suppressed during quiet hours', {
+      taskId: task.id,
+      userId: task.userId,
+    });
+    return true;
+  }
+
+  /**
+   * Whether `at` falls inside the user's quiet hours (local wall clock —
+   * the gateway runs on the user's own machine, so host-local time IS the
+   * user's clock, the same convention as the day-basis fixes). Handles the
+   * midnight-spanning window: 22:00-07:00 must suppress both 23:30 and
+   * 00:30. `start === end` is treated as a zero-length window; unparsable
+   * times disable quiet hours rather than silently muting everything.
+   */
+  private isQuietHours(userId: string, at: Date): boolean {
+    const prefs = this.userPreferences.get(userId);
+    if (!prefs?.quietHoursStart || !prefs?.quietHoursEnd) {
+      return false;
+    }
+    const parse = (value: string): number | null => {
+      const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+      if (!match) return null;
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours > 23 || minutes > 59) return null;
+      return hours * 60 + minutes;
+    };
+    const start = parse(prefs.quietHoursStart);
+    const end = parse(prefs.quietHoursEnd);
+    if (start === null || end === null || start === end) {
+      return false;
+    }
+    const now = at.getHours() * 60 + at.getMinutes();
+    return start < end ? now >= start && now < end : now >= start || now < end;
+  }
+
+  /**
+   * Whether a notification for this task must be suppressed right now:
+   * the task opted into quiet hours (respectQuietHours — note the
+   * notifyChannels fallback sets it true BY DEFAULT) AND the owner defined
+   * a quiet window AND the fire time is inside it. Round 72: this flag was
+   * accepted in TaskNotificationConfig but never enforced anywhere, so
+   * scheduled notifications and reminders fired at 3am regardless.
+   */
+  private shouldSuppressForQuietHours(
+    task: ScheduledTask,
+    config: TaskNotificationConfig
+  ): boolean {
+    if (!config.respectQuietHours) {
+      return false;
+    }
+    if (!this.isQuietHours(task.userId, new Date())) {
+      return false;
+    }
+    log.debug('Notification suppressed during quiet hours', {
+      taskId: task.id,
+      userId: task.userId,
+    });
+    return true;
   }
 
   /**
