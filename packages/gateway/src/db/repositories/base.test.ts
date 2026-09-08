@@ -492,3 +492,74 @@ describe('ensureTable', () => {
     expect(mockAdapter.exec).toHaveBeenCalledWith('CREATE TABLE my_table (id TEXT)');
   });
 });
+
+// ---------------------------------------------------------------------------
+// paginatedQuery limit clamp (round 73 regression)
+// ---------------------------------------------------------------------------
+
+// H-D11 clamped offset only; limit — the parameter that actually bounds the
+// row-pull size — flowed raw into LIMIT $N, so direct repo callers (jobs,
+// channels — the exact non-HTTP contexts H-D11 cites) could pass
+// limit=1_000_000 (whole-table materialization in one query) or invalid
+// values (negative → PG syntax error; NaN → driver serialization error).
+// Round 73 clamps limit to [1, 10000], mirroring MAX_OFFSET and sitting
+// above every legitimate route caller's cap (routes cap at 100/500), so no
+// valid flow changes.
+describe('paginatedQuery limit clamp (round 73)', () => {
+  let repo: TestRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    repo = new TestRepository();
+  });
+
+  it('clamps an absurd limit to 10000', async () => {
+    const result = await repo.testPaginatedQuery(
+      'SELECT * FROM probe',
+      'SELECT COUNT(*) as count FROM probe',
+      { limit: 1_000_000, offset: 0 }
+    );
+
+    expect(result.limit).toBe(10_000);
+    // The emitted data query must carry the clamped bound, not the caller's.
+    expect(mockAdapter.query).toHaveBeenLastCalledWith(
+      expect.stringContaining('LIMIT $1 OFFSET $2'),
+      [10_000, 0]
+    );
+  });
+
+  it('floors a negative limit to 1 (negative LIMIT is invalid PG syntax)', async () => {
+    const result = await repo.testPaginatedQuery('SELECT 1', 'SELECT 1', { limit: -5 });
+
+    expect(result.limit).toBe(1);
+    expect(mockAdapter.query).toHaveBeenLastCalledWith(expect.any(String), [1, 0]);
+  });
+
+  it('falls back to the default 50 for a NaN limit', async () => {
+    const result = await repo.testPaginatedQuery('SELECT 1', 'SELECT 1', { limit: Number.NaN });
+
+    expect(result.limit).toBe(50);
+    expect(mockAdapter.query).toHaveBeenLastCalledWith(expect.any(String), [50, 0]);
+  });
+
+  it('passes normal limits through untouched', async () => {
+    const result = await repo.testPaginatedQuery('SELECT 1', 'SELECT 1', { limit: 25, offset: 7 });
+
+    expect(result.limit).toBe(25);
+    expect(result.offset).toBe(7);
+    expect(mockAdapter.query).toHaveBeenLastCalledWith(expect.any(String), [25, 7]);
+  });
+
+  it('defaults limit to 50 when omitted', async () => {
+    const result = await repo.testPaginatedQuery('SELECT 1', 'SELECT 1', {});
+
+    expect(result.limit).toBe(50);
+  });
+
+  it('keeps the H-D11 offset clamp intact (offset 50000 -> 10000)', async () => {
+    const result = await repo.testPaginatedQuery('SELECT 1', 'SELECT 1', { offset: 50_000 });
+
+    expect(result.offset).toBe(10_000);
+    expect(mockAdapter.query).toHaveBeenLastCalledWith(expect.any(String), [50, 10_000]);
+  });
+});

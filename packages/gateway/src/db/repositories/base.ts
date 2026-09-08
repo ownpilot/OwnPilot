@@ -127,7 +127,31 @@ export abstract class BaseRepository {
     defaultOrderBy = 'created_at DESC',
     allowedOrderByColumns?: Set<string>
   ): Promise<{ rows: T[]; total: number; limit: number; offset: number }> {
-    const limit = query.limit ?? 50;
+    // Round 73: LIMIT bounds the actual row-pull size, so it gets the same
+    // defense H-D11 gave offset. The route layer caps limit (helpers.ts
+    // Math.min(Math.max(1,…), maxLimit); caps 100/500), but repos called
+    // directly from non-HTTP contexts (jobs, channels) bypass routes and
+    // could pass limit=1_000_000 (whole-table materialization in one query)
+    // or an invalid value (negative → PG syntax error; NaN → driver error).
+    // MAX_LIMIT mirrors MAX_OFFSET and sits above every legitimate route
+    // caller's cap, so no valid flow changes.
+    const MAX_LIMIT = 10_000;
+    const DEFAULT_LIMIT = 50;
+    const rawLimit = query.limit;
+    const limit =
+      typeof rawLimit !== 'number' || !Number.isFinite(rawLimit)
+        ? DEFAULT_LIMIT
+        : Math.min(MAX_LIMIT, Math.max(1, rawLimit));
+    if (
+      typeof rawLimit === 'number' &&
+      Number.isFinite(rawLimit) &&
+      (rawLimit > MAX_LIMIT || rawLimit < 1)
+    ) {
+      log.warn(
+        `[paginatedQuery] limit ${rawLimit} clamped to ${limit} — direct repo callers should pass a bounded limit`
+      );
+    }
+
     // H-D11: clamp offset to bound deep-paging table-scan cost. Mirrors the
     // route-layer cap in helpers.ts so repos called directly from non-HTTP
     // contexts (jobs, channels) are equally bounded.
