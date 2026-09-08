@@ -648,6 +648,27 @@ function rejectSymlinkAt(fullPath: string): void {
 }
 
 /**
+ * Reject symlinks in EVERY component of a workspace-relative path, not just
+ * the final one. rejectSymlinkAt() lstats only the target — but a symlink
+ * planted as an INTERMEDIATE directory (an agent's spawned `ln -s`, or a
+ * junction on Windows) passes the lexical `startsWith` prefix check, is
+ * followed by every later fs call, and makes lstat of the final component
+ * report a regular file — so read/write/delete all resolve OUTSIDE the
+ * workspace (runtime-proven, round 70). Missing components no-op, same as
+ * rejectSymlinkAt.
+ */
+function rejectSymlinkInPath(workspacePath: string, fullPath: string): void {
+  const rel = relative(workspacePath, fullPath);
+  if (!rel) return;
+  let current = workspacePath;
+  for (const part of rel.split(sep)) {
+    if (!part) continue;
+    current = join(current, part);
+    rejectSymlinkAt(current);
+  }
+}
+
+/**
  * Read a file from session workspace
  */
 export function readSessionWorkspaceFile(id: string, filePath: string): Buffer | null {
@@ -665,8 +686,10 @@ export function readSessionWorkspaceFile(id: string, filePath: string): Buffer |
     return null;
   }
 
-  // Defense-in-depth against symlink-based workspace escape.
-  rejectSymlinkAt(fullPath);
+  // Defense-in-depth against symlink-based workspace escape — check EVERY
+  // path component, not just the final one (an intermediate symlinked
+  // directory escapes a final-only check; round 70).
+  rejectSymlinkInPath(join(workspaceRoot, id), fullPath);
 
   return readFileSync(fullPath);
 }
@@ -690,19 +713,19 @@ export function writeSessionWorkspaceFile(
     throw new Error('Path traversal attempt detected');
   }
 
+  // Defense-in-depth: refuse to traverse a symlink in ANY path component —
+  // a symlinked intermediate directory (agent-planted `ln -s`, or a Windows
+  // junction) would make both the implicit parent mkdir and the write land
+  // outside the workspace. Missing components no-op, so writing to fresh
+  // paths still creates parent directories cleanly.
+  rejectSymlinkInPath(join(workspaceRoot, id), fullPath);
+
   // Ensure directory exists. Use existsSync on the parent first; if it
   // already exists we don't mkdir, matching the original behavior and
   // keeping the existsSync call sequence predictable for tests.
   const dir = join(fullPath, '..');
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
-  }
-
-  // Defense-in-depth: if the target file already exists AND is a symlink,
-  // refuse the write — clobbering a symlink would write to its target
-  // (potentially outside the workspace).
-  if (existsSync(fullPath)) {
-    rejectSymlinkAt(fullPath);
   }
 
   writeFileSync(fullPath, content);
@@ -722,6 +745,12 @@ export function deleteSessionWorkspaceFile(id: string, filePath: string): boolea
   if (!fullPath.startsWith(allowedPrefix)) {
     throw new Error('Path traversal attempt detected');
   }
+
+  // Defense-in-depth: refuse to traverse a symlink in ANY path component —
+  // rmSync follows a symlinked intermediate directory and would remove
+  // files OUTSIDE the workspace (this op previously had no symlink check at
+  // all; round 70).
+  rejectSymlinkInPath(join(workspaceRoot, id), fullPath);
 
   if (!existsSync(fullPath)) {
     return false;
