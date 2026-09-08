@@ -131,6 +131,14 @@ export interface CredentialStorageBackend {
   getByProvider(userId: string, provider: CredentialProvider): Promise<CredentialEntry | null>;
   /** Store credential */
   set(entry: CredentialEntry): Promise<void>;
+  /**
+   * Overwrite an entry ONLY if its id still exists — never re-create a
+   * deleted key. Read paths (usage tracking, legacy migration) use this for
+   * write-backs so a stale snapshot cannot resurrect a credential that was
+   * replaced or deleted while the reader was parked on an await. Optional:
+   * backends without it fall back to plain set() at the caller's risk.
+   */
+  setIfPresent?(entry: CredentialEntry): Promise<void>;
   /** Delete credential */
   delete(id: string): Promise<void>;
   /** Delete all credentials for a user */
@@ -177,6 +185,13 @@ export class InMemoryCredentialBackend implements CredentialStorageBackend {
 
   async set(entry: CredentialEntry): Promise<void> {
     this.store.set(entry.id, entry);
+  }
+
+  /** Overwrite only if the id still exists — see CredentialStorageBackend. */
+  async setIfPresent(entry: CredentialEntry): Promise<void> {
+    if (this.store.has(entry.id)) {
+      this.store.set(entry.id, entry);
+    }
   }
 
   async delete(id: string): Promise<void> {
@@ -364,7 +379,13 @@ export class UserCredentialStore {
     if (entry.salt) return;
     try {
       const { encrypted, iv, salt } = encryptValue(plaintext, this.config.encryptionKey);
-      await this.backend.set({ ...entry, encryptedValue: encrypted, iv, salt });
+      // Same resurrect guard as updateUsage (round 68): only write back if
+      // the entry is still current.
+      if (this.backend.setIfPresent) {
+        await this.backend.setIfPresent({ ...entry, encryptedValue: encrypted, iv, salt });
+      } else {
+        await this.backend.set({ ...entry, encryptedValue: encrypted, iv, salt });
+      }
     } catch {
       // best-effort; keep serving the decrypted value
     }
@@ -548,7 +569,15 @@ export class UserCredentialStore {
         usageCount: entry.metadata.usageCount + 1,
       },
     };
-    await this.backend.set(updated);
+    // Conditional write: this snapshot was taken before get()/getById()
+    // awaited decryption. If the entry was replaced or deleted meanwhile, a
+    // plain set() re-creates the dead key — resurrecting a deleted
+    // credential and recreating duplicate-provider state (round 68).
+    if (this.backend.setIfPresent) {
+      await this.backend.setIfPresent(updated);
+    } else {
+      await this.backend.set(updated);
+    }
   }
 
   /**

@@ -1335,3 +1335,125 @@ describe('Edge cases', () => {
     expect(await ctxA.getApiKey('openai')).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// UserCredentialStore — read-path write-back (round 68)
+// ---------------------------------------------------------------------------
+
+/**
+ * InMemoryCredentialBackend subclass that parks the FIRST backend write
+ * (set or setIfPresent) after armGate(), making the read-path/replace
+ * interleaving deterministic: get() reaches its usage write-back, a full
+ * store() replace completes while that write is parked, then the parked
+ * write resumes. Pre-round-68, the parked write re-created the deleted Map
+ * key — resurrecting the replaced credential.
+ */
+class GatedBackend extends InMemoryCredentialBackend {
+  private gatePromise: Promise<void> | null = null;
+  private gateResolve: (() => void) | null = null;
+  private gateArmed = false;
+  gatedWriteEntered = false;
+
+  armGate(): void {
+    this.gateArmed = true;
+    this.gatedWriteEntered = false;
+    this.gatePromise = new Promise((resolve) => {
+      this.gateResolve = resolve;
+    });
+  }
+
+  releaseGate(): void {
+    this.gateResolve?.();
+  }
+
+  private async maybePark(): Promise<void> {
+    if (this.gateArmed && !this.gatedWriteEntered) {
+      this.gatedWriteEntered = true;
+      await this.gatePromise;
+      this.gateArmed = false;
+    }
+  }
+
+  override async set(entry: CredentialEntry): Promise<void> {
+    await this.maybePark();
+    return super.set(entry);
+  }
+
+  override async setIfPresent(entry: CredentialEntry): Promise<void> {
+    await this.maybePark();
+    return super.setIfPresent(entry);
+  }
+}
+
+async function pumpUntilWriteEntered(backend: GatedBackend): Promise<void> {
+  for (let i = 0; i < 100 && !backend.gatedWriteEntered; i++) {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+  if (!backend.gatedWriteEntered) {
+    throw new Error('get() never reached its usage write-back within the pump budget');
+  }
+}
+
+describe('UserCredentialStore — read-path write-back does not resurrect credentials (round 68)', () => {
+  it('a store() replace completing while get() is parked leaves exactly the replacement active', async () => {
+    const backend = new GatedBackend();
+    const store = makeStore(FIXED_KEY, backend);
+    const idOld = await store.store(USER_A, 'openai', 'api_key', 'key-OLD');
+
+    backend.armGate();
+    const getParked = store.get(USER_A, 'openai');
+    await pumpUntilWriteEntered(backend);
+
+    const idNew = await store.store(USER_A, 'openai', 'api_key', 'key-NEW');
+
+    backend.releaseGate();
+    await getParked;
+
+    expect(idNew).not.toBe(idOld);
+    const listed = (await store.list(USER_A)).filter((e) => e.provider === 'openai');
+    expect(listed.map((e) => e.id)).toEqual([idNew]);
+  });
+
+  it('after deleting the replacement, get() returns null — the stale snapshot does not resurrect the old credential', async () => {
+    const backend = new GatedBackend();
+    const store = makeStore(FIXED_KEY, backend);
+    await store.store(USER_A, 'openai', 'api_key', 'key-OLD');
+
+    backend.armGate();
+    const getParked = store.get(USER_A, 'openai');
+    await pumpUntilWriteEntered(backend);
+
+    const idNew = await store.store(USER_A, 'openai', 'api_key', 'key-NEW');
+
+    backend.releaseGate();
+    await getParked;
+
+    expect(await store.delete(idNew, USER_A)).toBe(true);
+    expect(await store.get(USER_A, 'openai')).toBeNull();
+  });
+
+  it('usage tracking still writes through in the un-raced case (guard must not silently no-op)', async () => {
+    const store = makeStore();
+    await store.store(USER_A, 'openai', 'api_key', 'key-OK');
+    await store.get(USER_A, 'openai');
+
+    const listed = await store.list(USER_A);
+    expect(listed).toHaveLength(1);
+    expect(listed[0].metadata.usageCount).toBe(1);
+    expect(listed[0].metadata.lastUsedAt).toBeInstanceOf(Date);
+  });
+
+  it('backend setIfPresent overwrites an existing id and never re-creates a deleted one', async () => {
+    const backend = makeBackend();
+    const entry = makeEntry({ id: 'cred_sp1' });
+    await backend.set(entry);
+
+    await backend.setIfPresent({ ...entry, encryptedValue: 'changed' });
+    expect((await backend.get('cred_sp1'))?.encryptedValue).toBe('changed');
+
+    await backend.delete('cred_sp1');
+    await backend.setIfPresent({ ...entry, encryptedValue: 'zombie' });
+    expect(await backend.get('cred_sp1')).toBeNull();
+    expect(await backend.list()).toEqual([]);
+  });
+});
