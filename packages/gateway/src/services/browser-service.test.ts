@@ -1465,3 +1465,108 @@ describe('browser selector recovery hints', () => {
     expect(page.accessibility.snapshot).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Concurrent cold-start single-flight (round 71)
+// ---------------------------------------------------------------------------
+
+// Pre-round-71, ensureBrowser() had no single-flight: two overlapping
+// cold-starts both passed the `this.browser?.connected` check while
+// this.browser was still null and both launched Chromium — the loser's
+// assignment was overwritten, orphaning an instance that is never closed,
+// while its 'disconnected' handler stayed registered on `this` and later
+// evicted the LIVE browser's sessions.
+describe('BrowserService concurrent cold-start (round 71)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockIsBlockedUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValue(false);
+    mockHasPII.mockReturnValue(false);
+    mockDetectPII.mockReturnValue({ matches: [] });
+    mockConfigServicesRepoGetFieldValue.mockReturnValue(undefined);
+    mockGetLog.mockReturnValue({
+      info: mockLogInfo,
+      debug: mockLogDebug,
+      warn: mockLogWarn,
+      error: mockLogError,
+    });
+
+    mockPage.goto.mockResolvedValue(undefined);
+    mockPage.waitForNetworkIdle.mockResolvedValue(undefined);
+    mockPage.title.mockResolvedValue('Test Page');
+    mockPage.$eval.mockResolvedValue('page text content');
+    mockPage.setViewport.mockResolvedValue(undefined);
+    mockPage.setRequestInterception.mockResolvedValue(undefined);
+    mockPage.on.mockReturnValue(undefined);
+
+    process.env.PUPPETEER_EXECUTABLE_PATH = '/usr/bin/chrome';
+  });
+
+  afterEach(() => {
+    delete process.env.PUPPETEER_EXECUTABLE_PATH;
+  });
+
+  it('two overlapping navigations launch exactly ONE browser (no orphaned instance)', async () => {
+    // Gated launch mirroring the round-71 proof: the FIRST launch parks on a
+    // gate the test controls; a racing second launch (the pre-fix defect)
+    // would resolve immediately. Each call returns a fresh browser instance
+    // so an orphan (close() never called) is observable.
+    const launched: Array<{ connected: boolean; close: ReturnType<typeof vi.fn> }> = [];
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let firstEntered = false;
+    let calls = 0;
+
+    mockPuppeteerLaunch.mockImplementation(async () => {
+      calls += 1;
+      if (calls === 1) {
+        firstEntered = true;
+        await firstGate;
+      }
+      const browser = {
+        connected: true,
+        newPage: vi.fn().mockResolvedValue(mockPage),
+        close: vi.fn(async () => {
+          browser.connected = false;
+        }),
+        on: vi.fn(),
+      };
+      launched.push(browser);
+      return browser;
+    });
+
+    const tick = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
+
+    const service = new BrowserService();
+
+    // user-a navigates: parks inside launch #1.
+    const navA = service.navigate('user-a', 'https://example.com');
+    for (let i = 0; i < 200 && !firstEntered; i++) await tick();
+    expect(firstEntered).toBe(true);
+
+    // user-b navigates while launch #1 is parked. Settle its mocked pipeline
+    // past the `this.browser?.connected` check while this.browser is still
+    // null — pre-fix this triggers a SECOND launch; post-fix user-b joins
+    // the in-flight launch promise.
+    const navB = service.navigate('user-b', 'https://example.com');
+    for (let i = 0; i < 20; i++) await tick();
+
+    releaseFirst();
+    const [resA, resB] = await Promise.all([navA, navB]);
+    expect(resA.title).toBe('Test Page');
+    expect(resB.title).toBe('Test Page');
+
+    // Exactly one launch served both cold-start callers.
+    expect(mockPuppeteerLaunch).toHaveBeenCalledTimes(1);
+
+    await service.shutdown();
+
+    // No orphan: every launched browser was closed.
+    for (const [index, browser] of launched.entries()) {
+      expect(browser.close, `browser #${index + 1} leaked (close never called)`).toHaveBeenCalled();
+    }
+  });
+});

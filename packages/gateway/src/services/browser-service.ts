@@ -206,6 +206,7 @@ interface PageSession {
 
 export class BrowserService {
   private browser: Browser | null = null;
+  private browserLaunch: Promise<Browser> | null = null;
   private sessions = new Map<string, PageSession>();
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -715,6 +716,21 @@ export class BrowserService {
   private async ensureBrowser(): Promise<Browser> {
     if (this.browser?.connected) return this.browser;
 
+    // Single-flight: concurrent cold-starts must share ONE launch. Without
+    // this, two overlapping callers both pass the connected check while
+    // this.browser is still null and both launch — the loser's assignment is
+    // overwritten, orphaning a Chromium instance that is never closed, while
+    // its 'disconnected' handler stays registered on `this` and later evicts
+    // the LIVE browser's sessions (round 71).
+    if (!this.browserLaunch) {
+      this.browserLaunch = this.launchBrowser().finally(() => {
+        this.browserLaunch = null;
+      });
+    }
+    return this.browserLaunch;
+  }
+
+  private async launchBrowser(): Promise<Browser> {
     const execPath = this.findExecutablePath();
     if (!execPath) {
       throw new Error(
@@ -723,7 +739,7 @@ export class BrowserService {
     }
 
     const puppeteer = await import('puppeteer-core');
-    this.browser = await puppeteer.default.launch({
+    const browser = await puppeteer.default.launch({
       executablePath: execPath,
       headless: true,
       args: [
@@ -741,14 +757,15 @@ export class BrowserService {
       ],
     });
 
-    this.browser.on('disconnected', () => {
+    browser.on('disconnected', () => {
       log.info('Browser disconnected');
       this.browser = null;
       this.sessions.clear();
     });
 
     log.info('Browser launched', { executablePath: execPath });
-    return this.browser;
+    this.browser = browser;
+    return browser;
   }
 
   // --------------------------------------------------------------------------
