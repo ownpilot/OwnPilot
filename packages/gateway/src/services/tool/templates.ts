@@ -722,10 +722,18 @@ if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
 }
 if (startDate > endDate) return { error: 'Start date must be before end date' };
 
+// Local calendar day. toISOString() reports the UTC day, which is a different
+// calendar day than the local one for every non-UTC timezone — 'date' output
+// is a scheduling day key and must match the user's local calendar.
+const localDay = (d) =>
+  d.getFullYear() + '-' +
+  String(d.getMonth() + 1).padStart(2, '0') + '-' +
+  String(d.getDate()).padStart(2, '0');
+
 let current = new Date(startDate);
 while (current <= endDate && dates.length < 1000) {
   switch (format) {
-    case 'date': dates.push(current.toISOString().split('T')[0]); break;
+    case 'date': dates.push(localDay(current)); break;
     case 'unix': dates.push(current.getTime()); break;
     default: dates.push(current.toISOString()); break;
   }
