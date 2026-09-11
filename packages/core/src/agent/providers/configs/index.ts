@@ -69,6 +69,7 @@ export const PROVIDER_IDS = [
   'cortecs',
   'deepinfra',
   'deepseek',
+  'evolink',
   'fastrouter',
   'fireworks-ai',
   'firmware',
