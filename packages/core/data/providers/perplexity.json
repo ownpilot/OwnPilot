@@ -72,6 +72,9 @@
       "releaseDate": "2024-01-01"
     }
   ],
+  "headers": {
+    "X-Pplx-Integration": "ownpilot"
+  },
   "baseUrl": "https://api.perplexity.ai",
   "docsUrl": "https://docs.perplexity.ai"
 }
