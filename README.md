@@ -1516,6 +1516,10 @@ LOG_LEVEL=info
 
 ## Deployment
 
+### ☁️ One-Click Deploy
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/ownpilot/)
+
 ### Ports & Services
 
 | Service        | Port    | Protocol | Description                                  |
